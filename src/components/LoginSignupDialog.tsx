@@ -14,9 +14,29 @@ import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info as InfoIcon, Mail as MailIcon } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
+import { useState } from "react";
+import { authService } from "@/services/auth.services";
 
 
 export function LoginSignupDialog({ trigger }: { trigger: React.ReactNode }) {
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handlelogin = async() => {
+    try {
+      setLoading(true);
+      const data = await authService.login({ email, password });
+      console.log("Login success:", data);
+    } catch (error) {
+      console.error("Login failed:", error);
+      alert("Login failed!");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     // Wrap with TooltipProvider for the info icon tooltip to work
     <TooltipProvider>
@@ -44,8 +64,9 @@ export function LoginSignupDialog({ trigger }: { trigger: React.ReactNode }) {
                 id="email"
                 type="email"
                 placeholder="Enter your email"
-                // Add left padding to make space for the icon
                 className="pl-10"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
               {/* Mail Icon positioned absolutely inside the input field */}
               <MailIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -57,8 +78,9 @@ export function LoginSignupDialog({ trigger }: { trigger: React.ReactNode }) {
                 id="password"
                 type="password"
                 placeholder="Enter password"
-                // Add right padding for the info icon
                 className="pr-10"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
 
               <Tooltip>
@@ -79,7 +101,7 @@ export function LoginSignupDialog({ trigger }: { trigger: React.ReactNode }) {
             </div>
           </div>
 
-          <Button type="submit" className="w-full">Continue</Button>
+          <Button type="submit" className="w-full" onClick={handlelogin} disabled={loading}>{loading ? "Loading..." : "Continue"}</Button>
 
           <div className="relative my-2">
             <div className="absolute inset-0 flex items-center">
