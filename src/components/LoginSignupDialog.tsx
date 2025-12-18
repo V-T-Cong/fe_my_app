@@ -11,11 +11,11 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Info as InfoIcon, Mail as MailIcon } from "lucide-react";
-import { FcGoogle } from "react-icons/fc";
-import { useState } from "react";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { authService } from "@/services/auth.services";
+import { Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
+import { FcGoogle } from "react-icons/fc";
 
 
 export function LoginSignupDialog({ trigger }: { trigger: React.ReactNode }) {
@@ -23,8 +23,27 @@ export function LoginSignupDialog({ trigger }: { trigger: React.ReactNode }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handlelogin = async() => {
+  const isValidEmail = (email: string) => {
+    // This regex checks for characters + @ + characters + . + characters
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  const handlelogin = async () => {
+    setError("");
+
+    if (!email || !password) {
+      setError("Please fill in both email and password. ");
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      setError("Please enter a valid email address (e.g., user@example.com).");
+      return;
+    }
+
     try {
       setLoading(true);
       const data = await authService.login({ email, password });
@@ -64,41 +83,48 @@ export function LoginSignupDialog({ trigger }: { trigger: React.ReactNode }) {
                 id="email"
                 type="email"
                 placeholder="Enter your email"
-                className="pl-10"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
-              {/* Mail Icon positioned absolutely inside the input field */}
-              <MailIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             </div>
 
             <div className="relative">
               <Label htmlFor="password" className="sr-only">Password</Label>
               <Input
                 id="password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="Enter password"
                 className="pr-10"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                  if (error) setError("");
+                }}
               />
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-1/2 h-8 w-8 -translate-y-1/2 rounded-full text-muted-foreground hover:bg-transparent"
-                    aria-label="Info"
-                  >
-                    <InfoIcon className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Password must be at least 8 characters</p>
-                </TooltipContent>
-              </Tooltip>
+              <Button 
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute right-0 top-1/2 h-8 w-8 -translate-y-1/2 rounded-full text-muted-foreground hover:bg-transparent"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {/* Switch icon based on state */}
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" aria-hidden="true" />
+                ) : (
+                  <Eye className="h-4 w-4" aria-hidden="true" />
+                )}
+                <span className="sr-only">
+                  {showPassword ? "Hide password" : "Show password"}
+                </span>
+              </Button>
             </div>
+            {error && (
+              <div className="text-red-500 text-sm font-medium text-center">
+                {error}
+              </div>
+            )}
           </div>
 
           <Button type="submit" className="w-full" onClick={handlelogin} disabled={loading}>{loading ? "Loading..." : "Continue"}</Button>
