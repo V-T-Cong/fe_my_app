@@ -16,6 +16,8 @@ import { authService } from "@/services/auth.services";
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
+import { useRouter } from "next/navigation"
+import { AxiosError } from "axios";
 
 
 export function LoginSignupDialog({ trigger }: { trigger: React.ReactNode }) {
@@ -25,6 +27,8 @@ export function LoginSignupDialog({ trigger }: { trigger: React.ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  const router = useRouter();
 
   const isValidEmail = (email: string) => {
     // This regex checks for characters + @ + characters + . + characters
@@ -48,9 +52,15 @@ export function LoginSignupDialog({ trigger }: { trigger: React.ReactNode }) {
       setLoading(true);
       const data = await authService.login({ email, password });
       console.log("Login success:", data);
+      router.push("/dashboard");
     } catch (error) {
       console.error("Login failed:", error);
-      alert("Login failed!");
+      if (error instanceof AxiosError && error.response?.status === 401) {
+        setError("Invalid email or password.");
+      } else {
+        // Fallback for other errors (500, network issues, etc.)
+        setError("Login failed. Please try again later.");
+      }
     } finally {
       setLoading(false);
     }
