@@ -5,7 +5,7 @@ export default function HomePage() {
     <div className="min-h-screen">
       <NavBar />
 
-      <main className="container py-12">
+      <main className="container mx-auto py-12">
         <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl">
           Welcome to the Home Page!
         </h1>
