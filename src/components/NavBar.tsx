@@ -34,7 +34,7 @@ export function NavBar() {
               <input
                 type="text"
                 placeholder="Minecraft, Windows 11, Pubg..."
-                className="flex-grow bg-transparent outline-none text-sm px-4 py-2.5 text-gray-700 placeholder:text-gray-400"
+                className="grow bg-transparent outline-none text-sm px-4 py-2.5 text-gray-700 placeholder:text-gray-400"
               />
               <button className="bg-primary text-primary-foreground px-5 py-2.5 hover:bg-primary/90 transition-colors font-medium text-sm flex items-center">
                 <Search className="h-4 w-4 mr-2" />
@@ -68,7 +68,7 @@ export function NavBar() {
                 </Button>
               </DropdownMenuTrigger>
 
-              <DropdownMenuContent align="end" className="w-[240px] mt-2">
+              <DropdownMenuContent align="end" className="w-60 mt-2">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuItem>Orders</DropdownMenuItem>
                 <DropdownMenuItem>Wishlist</DropdownMenuItem>
