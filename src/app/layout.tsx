@@ -1,13 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import StoreProvider from "@/lib/redux/StoreProvider";
-import { NavBar } from "@/components/NavBar";
-import { Footer } from "@/components/Footer";
 
 const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-sans", // We name this variable generically
+  variable: "--font-sans",
   display: "swap",
 });
 
@@ -23,13 +21,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} font-sans antialiased`} >
+      {/* 3. Apply the new variable and class */}
+      <body className={`${inter.variable} font-sans antialiased`}>
         <StoreProvider>
-          <div className="min-h-screen flex flex-col bg-gray-50/50">
-            <main className="flex-1">
-              {children}
-            </main>
-          </div>
+          {children}
         </StoreProvider>
       </body>
     </html>
