@@ -12,8 +12,11 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { LoginSignupDialog } from "./LoginSignupDialog";
+import { useAppSelector } from "@/lib/redux/hooks";
 
 export function NavBar() {
+  const cartTotalItems = useAppSelector((state) => state.cart.totalItems);
+
   return (
     <header className="sticky top-0 z-50 w-full bg-white shadow-sm">
 
@@ -53,10 +56,16 @@ export function NavBar() {
               <Bell className="h-5 w-5" />
             </Button>
 
-            <Button variant="ghost" size="icon" className="relative text-gray-600 hover:text-primary mr-2">
-              <ShoppingCart className="h-5 w-5" />
-              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
-            </Button>
+            <Link href="/cart">
+              <Button variant="ghost" size="icon" className="relative text-gray-600 hover:text-primary mr-2">
+                <ShoppingCart className="h-5 w-5" />
+                {cartTotalItems > 0 && (
+                  <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center ring-2 ring-white">
+                    {cartTotalItems}
+                  </span>
+                )}
+              </Button>
+            </Link>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

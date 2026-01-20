@@ -1,6 +1,10 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Star } from "lucide-react";
 import Link from "next/link";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { addToCart } from "@/lib/redux/features/cartSlice";
 
 interface GameProps {
 	id: number;
@@ -16,6 +20,21 @@ interface GameProps {
 }
 
 export function GameCard({ game, badgeLabel }: { game: GameProps, badgeLabel?: string }) {
+	const dispatch = useAppDispatch();
+
+	const handleAddToCart = () => {
+		dispatch(addToCart({
+			id: game.id,
+			title: game.title,
+			price: game.price,
+			originalPrice: game.originalPrice,
+			discount: game.discount,
+			category: game.category,
+			color: game.color,
+			initials: game.initials,
+		}));
+	};
+
 	return (
 		<div className="group relative bg-white border rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
 			{/* Badge Logic: Priority to props, then internal discount */}
@@ -49,7 +68,12 @@ export function GameCard({ game, badgeLabel }: { game: GameProps, badgeLabel?: s
 					</h3>
 				</Link>
 
-				{/* ... Price section ... */}
+				<div className="flex items-baseline gap-2 mb-2">
+					<span className="text-lg font-bold text-primary">{game.price}</span>
+					{game.originalPrice && (
+						<span className="text-xs text-gray-400 line-through">{game.originalPrice}</span>
+					)}
+				</div>
 
 				{/* Update Button to be 'Add to Cart' functionality usually, but Link for 'View Details' */}
 				<div className="mt-auto pt-4 border-t">
@@ -60,7 +84,11 @@ export function GameCard({ game, badgeLabel }: { game: GameProps, badgeLabel?: s
 							</Button>
 						</Link>
 					) : (
-						<Button className="w-full font-semibold" size="sm">
+						<Button
+							className="w-full font-semibold"
+							size="sm"
+							onClick={handleAddToCart}
+						>
 							Add to Cart
 						</Button>
 					)}
