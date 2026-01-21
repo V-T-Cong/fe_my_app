@@ -3,6 +3,7 @@ import counterReducer from "./features/counterSlice";
 import cartReducer from "./features/cartSlice";
 import wishlistReducer from "./features/wishlistSlice";
 import productsReducer from "./features/productsSlice";
+import categoriesReducer from "./features/categoriesSlice";
 
 export const makeStore = () => {
   return configureStore({
@@ -11,6 +12,7 @@ export const makeStore = () => {
       cart: cartReducer,
       wishlist: wishlistReducer,
       products: productsReducer,
+      categories: categoriesReducer,
     },
   });
 };

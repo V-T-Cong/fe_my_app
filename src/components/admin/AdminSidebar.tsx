@@ -10,7 +10,8 @@ import {
     ShoppingCart,
     BarChart3,
     Settings,
-    Home
+    Home,
+    Tag
 } from "lucide-react";
 
 const sidebarItems = [
@@ -18,6 +19,11 @@ const sidebarItems = [
         title: "Dashboard",
         href: "/admin",
         icon: LayoutDashboard,
+    },
+    {
+        title: "Categories",
+        href: "/admin/categories",
+        icon: Tag,
     },
     {
         title: "Products",

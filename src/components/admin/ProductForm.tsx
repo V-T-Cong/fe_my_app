@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
+import { initializeCategories } from "@/lib/redux/features/categoriesSlice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,7 +31,7 @@ interface ProductFormProps {
     nextId: number;
 }
 
-const CATEGORIES = ["RPG", "Action", "Sandbox", "Adventure", "Shooter", "Sports", "OS", "Productivity", "Security", "Antivirus", "Creative", "Steam", "PSN", "Xbox", "Apple"];
+
 
 const COLOR_OPTIONS = [
     { name: "Yellow-Red", value: "bg-gradient-to-br from-yellow-600 to-red-800" },
@@ -49,6 +51,16 @@ const COLOR_OPTIONS = [
 ];
 
 export function ProductForm({ open, onOpenChange, onSave, product, nextId }: ProductFormProps) {
+    const dispatch = useAppDispatch();
+    const categories = useAppSelector((state) => state.categories.items);
+    const categoriesInitialized = useAppSelector((state) => state.categories.initialized);
+
+    useEffect(() => {
+        if (!categoriesInitialized) {
+            dispatch(initializeCategories());
+        }
+    }, [dispatch, categoriesInitialized]);
+
     const [formData, setFormData] = useState<Product>({
         id: nextId,
         title: "",
@@ -120,9 +132,12 @@ export function ProductForm({ open, onOpenChange, onSave, product, nextId }: Pro
                                     <SelectValue placeholder="Select a category" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {CATEGORIES.map((cat) => (
-                                        <SelectItem key={cat} value={cat}>
-                                            {cat}
+                                    {categories.map((cat) => (
+                                        <SelectItem key={cat.id} value={cat.name}>
+                                            <div className="flex items-center gap-2">
+                                                <div className={`w-4 h-4 rounded ${cat.color}`} />
+                                                {cat.name}
+                                            </div>
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
