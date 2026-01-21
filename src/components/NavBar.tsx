@@ -79,6 +79,9 @@ export function NavBar() {
 
               <DropdownMenuContent align="end" className="w-60 mt-2">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <Link href="/profile">
+                  <DropdownMenuItem>Profile</DropdownMenuItem>
+                </Link>
                 <DropdownMenuItem>Orders</DropdownMenuItem>
                 <Link href="/wishlist">
                   <DropdownMenuItem>Wishlist</DropdownMenuItem>
