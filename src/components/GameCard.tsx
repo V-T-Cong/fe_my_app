@@ -1,10 +1,11 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Star } from "lucide-react";
+import { Star, Heart } from "lucide-react";
 import Link from "next/link";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { addToCart } from "@/lib/redux/features/cartSlice";
+import { addToWishlist, removeFromWishlist } from "@/lib/redux/features/wishlistSlice";
 
 interface GameProps {
 	id: number;
@@ -21,6 +22,8 @@ interface GameProps {
 
 export function GameCard({ game, badgeLabel }: { game: GameProps, badgeLabel?: string }) {
 	const dispatch = useAppDispatch();
+	const wishlistItems = useAppSelector((state) => state.wishlist.items);
+	const isInWishlist = wishlistItems.some((item) => item.id === game.id);
 
 	const handleAddToCart = () => {
 		dispatch(addToCart({
@@ -35,6 +38,24 @@ export function GameCard({ game, badgeLabel }: { game: GameProps, badgeLabel?: s
 		}));
 	};
 
+	const handleToggleWishlist = () => {
+		if (isInWishlist) {
+			dispatch(removeFromWishlist(game.id));
+		} else {
+			dispatch(addToWishlist({
+				id: game.id,
+				title: game.title,
+				price: game.price,
+				originalPrice: game.originalPrice,
+				discount: game.discount,
+				rating: game.rating,
+				category: game.category,
+				color: game.color,
+				initials: game.initials,
+			}));
+		}
+	};
+
 	return (
 		<div className="group relative bg-white border rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300">
 			{/* Badge Logic: Priority to props, then internal discount */}
@@ -43,6 +64,17 @@ export function GameCard({ game, badgeLabel }: { game: GameProps, badgeLabel?: s
 					{badgeLabel || game.discount}
 				</div>
 			)}
+
+			{/* Wishlist Heart Button */}
+			<button
+				onClick={handleToggleWishlist}
+				className="absolute top-3 left-3 z-10 bg-white/90 hover:bg-white rounded-full p-2 transition-all hover:scale-110"
+			>
+				<Heart
+					className={`h-5 w-5 transition-colors ${isInWishlist ? 'fill-red-500 text-red-500' : 'text-gray-600'
+						}`}
+				/>
+			</button>
 
 			<Link href={`/product/${game.id}`} className="block">
 				<div className={`h-48 w-full ${game.color} flex items-center justify-center group-hover:scale-105 transition-transform duration-500`}>

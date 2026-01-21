@@ -2,8 +2,9 @@
 
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Heart, Share2, CreditCard } from "lucide-react";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { addToCart } from "@/lib/redux/features/cartSlice";
+import { addToWishlist, removeFromWishlist } from "@/lib/redux/features/wishlistSlice";
 
 interface ProductActionsProps {
     product: {
@@ -15,11 +16,14 @@ interface ProductActionsProps {
         category: string;
         color: string;
         initials: string;
+        rating?: number;
     };
 }
 
 export function ProductActions({ product }: ProductActionsProps) {
     const dispatch = useAppDispatch();
+    const wishlistItems = useAppSelector((state) => state.wishlist.items);
+    const isInWishlist = wishlistItems.some((item) => item.id === product.id);
 
     const handleAddToCart = () => {
         dispatch(
@@ -34,6 +38,24 @@ export function ProductActions({ product }: ProductActionsProps) {
                 initials: product.initials,
             })
         );
+    };
+
+    const handleToggleWishlist = () => {
+        if (isInWishlist) {
+            dispatch(removeFromWishlist(product.id));
+        } else {
+            dispatch(addToWishlist({
+                id: product.id,
+                title: product.title,
+                price: product.price,
+                originalPrice: product.originalPrice,
+                discount: product.discount,
+                rating: product.rating,
+                category: product.category,
+                color: product.color,
+                initials: product.initials,
+            }));
+        }
     };
 
     return (
@@ -63,9 +85,13 @@ export function ProductActions({ product }: ProductActionsProps) {
                     <Button
                         variant="outline"
                         size="lg"
-                        className="h-11 w-11 p-0 hover:text-red-500 hover:bg-red-50 hover:border-red-200"
+                        className={`h-11 w-11 p-0 transition-colors ${isInWishlist
+                                ? 'text-red-500 bg-red-50 border-red-200 hover:bg-red-100'
+                                : 'hover:text-red-500 hover:bg-red-50 hover:border-red-200'
+                            }`}
+                        onClick={handleToggleWishlist}
                     >
-                        <Heart className="w-5 h-5" />
+                        <Heart className={`w-5 h-5 ${isInWishlist ? 'fill-red-500' : ''}`} />
                     </Button>
                     <Button
                         variant="outline"

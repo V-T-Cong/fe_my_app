@@ -1,0 +1,259 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import {
+    initializeProducts,
+    addProduct,
+    updateProduct,
+    deleteProduct,
+    Product,
+} from "@/lib/redux/features/productsSlice";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { ProductForm } from "@/components/admin/ProductForm";
+import { Plus, Pencil, Trash2, Search, ArrowLeft } from "lucide-react";
+import Link from "next/link";
+
+export default function AdminProductsPage() {
+    const dispatch = useAppDispatch();
+    const products = useAppSelector((state) => state.products.items);
+    const initialized = useAppSelector((state) => state.products.initialized);
+
+    const [searchQuery, setSearchQuery] = useState("");
+    const [isFormOpen, setIsFormOpen] = useState(false);
+    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+
+    useEffect(() => {
+        if (!initialized) {
+            dispatch(initializeProducts());
+        }
+    }, [dispatch, initialized]);
+
+    const filteredProducts = products.filter((product) =>
+        product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.category.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    const handleAddProduct = () => {
+        setEditingProduct(null);
+        setIsFormOpen(true);
+    };
+
+    const handleEditProduct = (product: Product) => {
+        setEditingProduct(product);
+        setIsFormOpen(true);
+    };
+
+    const handleSaveProduct = (product: Product) => {
+        if (editingProduct) {
+            dispatch(updateProduct(product));
+        } else {
+            dispatch(addProduct(product));
+        }
+    };
+
+    const handleDeleteClick = (product: Product) => {
+        setProductToDelete(product);
+        setDeleteDialogOpen(true);
+    };
+
+    const handleConfirmDelete = () => {
+        if (productToDelete) {
+            dispatch(deleteProduct(productToDelete.id));
+            setDeleteDialogOpen(false);
+            setProductToDelete(null);
+        }
+    };
+
+    const getNextId = () => {
+        return products.length > 0 ? Math.max(...products.map((p) => p.id)) + 1 : 1;
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-50">
+            <div className="container mx-auto px-4 py-8 max-w-7xl">
+                {/* Header */}
+                <div className="mb-8">
+                    <Link
+                        href="/"
+                        className="inline-flex items-center text-sm text-gray-600 hover:text-primary mb-4"
+                    >
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Back to Store
+                    </Link>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-3xl font-bold text-gray-900">Product Management</h1>
+                            <p className="text-gray-600 mt-2">
+                                Manage your store products - {products.length} total products
+                            </p>
+                        </div>
+                        <Button onClick={handleAddProduct} size="lg">
+                            <Plus className="h-5 w-5 mr-2" />
+                            Add New Product
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Search Bar */}
+                <div className="mb-6 bg-white rounded-lg shadow-sm p-4">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <Input
+                            placeholder="Search products by name or category..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-10"
+                        />
+                    </div>
+                </div>
+
+                {/* Products Table */}
+                <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-16">ID</TableHead>
+                                <TableHead className="w-24">Preview</TableHead>
+                                <TableHead>Title</TableHead>
+                                <TableHead>Category</TableHead>
+                                <TableHead>Price</TableHead>
+                                <TableHead>Original</TableHead>
+                                <TableHead>Discount</TableHead>
+                                <TableHead className="w-20">Rating</TableHead>
+                                <TableHead className="w-32 text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {filteredProducts.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={9} className="text-center py-12 text-gray-500">
+                                        {searchQuery ? "No products found matching your search." : "No products available."}
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                filteredProducts.map((product) => (
+                                    <TableRow key={product.id}>
+                                        <TableCell className="font-medium">{product.id}</TableCell>
+                                        <TableCell>
+                                            <div
+                                                className={`w-16 h-16 rounded ${product.color} flex items-center justify-center`}
+                                            >
+                                                <span className="text-white font-bold text-xs opacity-70">
+                                                    {product.initials}
+                                                </span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="font-medium max-w-xs truncate">
+                                            {product.title}
+                                        </TableCell>
+                                        <TableCell>
+                                            <span className="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full">
+                                                {product.category}
+                                            </span>
+                                        </TableCell>
+                                        <TableCell className="font-semibold text-primary">
+                                            {product.price}
+                                        </TableCell>
+                                        <TableCell className="text-gray-500 line-through text-sm">
+                                            {product.originalPrice || "-"}
+                                        </TableCell>
+                                        <TableCell>
+                                            {product.discount ? (
+                                                <span className="text-red-600 font-semibold text-sm">
+                                                    {product.discount}
+                                                </span>
+                                            ) : (
+                                                "-"
+                                            )}
+                                        </TableCell>
+                                        <TableCell>
+                                            {product.rating ? (
+                                                <div className="flex items-center text-amber-500 text-sm font-semibold">
+                                                    ★ {product.rating}
+                                                </div>
+                                            ) : (
+                                                "-"
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex justify-end gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleEditProduct(product)}
+                                                >
+                                                    <Pencil className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleDeleteClick(product)}
+                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
+
+                {/* Product Form Dialog */}
+                <ProductForm
+                    open={isFormOpen}
+                    onOpenChange={setIsFormOpen}
+                    onSave={handleSaveProduct}
+                    product={editingProduct}
+                    nextId={getNextId()}
+                />
+
+                {/* Delete Confirmation Dialog */}
+                <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This will permanently delete <strong>{productToDelete?.title}</strong>.
+                                This action cannot be undone.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                                onClick={handleConfirmDelete}
+                                className="bg-red-600 hover:bg-red-700"
+                            >
+                                Delete
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
+        </div>
+    );
+}

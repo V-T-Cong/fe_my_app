@@ -80,8 +80,13 @@ export function NavBar() {
               <DropdownMenuContent align="end" className="w-60 mt-2">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuItem>Orders</DropdownMenuItem>
-                <DropdownMenuItem>Wishlist</DropdownMenuItem>
+                <Link href="/wishlist">
+                  <DropdownMenuItem>Wishlist</DropdownMenuItem>
+                </Link>
                 <DropdownMenuSeparator />
+                <Link href="/admin/products">
+                  <DropdownMenuItem>Admin</DropdownMenuItem>
+                </Link>
                 <DropdownMenuItem>Support</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <LoginSignupDialog trigger={
