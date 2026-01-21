@@ -22,7 +22,7 @@ export interface Product {
   originalPrice?: string;
   discount?: string;
   rating?: number;
-  category: string;
+  categories: string[];
   color: string;
   initials: string;
   keys?: ProductKey[];

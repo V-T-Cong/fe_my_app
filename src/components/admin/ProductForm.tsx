@@ -1,11 +1,10 @@
-"use client";
-
 import { useState, useEffect } from "react";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { initializeCategories } from "@/lib/redux/features/categoriesSlice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
     Dialog,
     DialogContent,
@@ -68,7 +67,7 @@ export function ProductForm({ open, onOpenChange, onSave, product, nextId }: Pro
         originalPrice: "",
         discount: "",
         rating: undefined,
-        category: "",
+        categories: [],
         color: COLOR_OPTIONS[0].value,
         initials: "",
     });
@@ -84,12 +83,27 @@ export function ProductForm({ open, onOpenChange, onSave, product, nextId }: Pro
                 originalPrice: "",
                 discount: "",
                 rating: undefined,
-                category: "",
+                categories: [],
                 color: COLOR_OPTIONS[0].value,
                 initials: "",
             });
         }
     }, [product, nextId, open]);
+
+    const handleCategoryToggle = (categoryName: string) => {
+        const currentCategories = formData.categories || [];
+        if (currentCategories.includes(categoryName)) {
+            setFormData({
+                ...formData,
+                categories: currentCategories.filter((c) => c !== categoryName),
+            });
+        } else {
+            setFormData({
+                ...formData,
+                categories: [...currentCategories, categoryName],
+            });
+        }
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -120,28 +134,44 @@ export function ProductForm({ open, onOpenChange, onSave, product, nextId }: Pro
                             />
                         </div>
 
-                        {/* Category */}
+                        {/* Categories */}
                         <div className="grid gap-2">
-                            <Label htmlFor="category">Category *</Label>
-                            <Select
-                                value={formData.category}
-                                onValueChange={(value) => setFormData({ ...formData, category: value })}
-                                required
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select a category" />
-                                </SelectTrigger>
-                                <SelectContent>
+                            <Label>Categories *</Label>
+                            <div className="border rounded-md p-4 max-h-64 overflow-y-auto">
+                                <div className="space-y-3">
                                     {categories.map((cat) => (
-                                        <SelectItem key={cat.id} value={cat.name}>
-                                            <div className="flex items-center gap-2">
+                                        <div key={cat.id} className="flex items-center space-x-3">
+                                            <Checkbox
+                                                id={`category-${cat.id}`}
+                                                checked={formData.categories?.includes(cat.name) || false}
+                                                onCheckedChange={() => handleCategoryToggle(cat.name)}
+                                            />
+                                            <label
+                                                htmlFor={`category-${cat.id}`}
+                                                className="flex items-center gap-2 cursor-pointer flex-1"
+                                            >
                                                 <div className={`w-4 h-4 rounded ${cat.color}`} />
-                                                {cat.name}
-                                            </div>
-                                        </SelectItem>
+                                                <span className="text-sm font-medium">{cat.name}</span>
+                                            </label>
+                                        </div>
                                     ))}
-                                </SelectContent>
-                            </Select>
+                                </div>
+                            </div>
+                            {formData.categories && formData.categories.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                    {formData.categories.map((catName) => {
+                                        const category = categories.find((c) => c.name === catName);
+                                        return (
+                                            <span
+                                                key={catName}
+                                                className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-white ${category?.color || "bg-gray-500"}`}
+                                            >
+                                                {catName}
+                                            </span>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
 
                         {/* Price and Original Price */}

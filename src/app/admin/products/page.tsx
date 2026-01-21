@@ -52,7 +52,7 @@ export default function AdminProductsPage() {
 
     const filteredProducts = products.filter((product) =>
         product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.category.toLowerCase().includes(searchQuery.toLowerCase())
+        product.categories?.some((cat) => cat.toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
     const handleAddProduct = () => {
@@ -162,9 +162,20 @@ export default function AdminProductsPage() {
                                             {product.title}
                                         </TableCell>
                                         <TableCell>
-                                            <span className="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full">
-                                                {product.category}
-                                            </span>
+                                            <div className="flex flex-wrap gap-1">
+                                                {product.categories && product.categories.length > 0 ? (
+                                                    product.categories.map((cat) => (
+                                                        <span
+                                                            key={cat}
+                                                            className="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full"
+                                                        >
+                                                            {cat}
+                                                        </span>
+                                                    ))
+                                                ) : (
+                                                    <span className="text-gray-400 text-xs">-</span>
+                                                )}
+                                            </div>
                                         </TableCell>
                                         <TableCell className="font-semibold text-primary">
                                             {product.price}

@@ -151,7 +151,7 @@ export default function CategoriesPage() {
     };
 
     const getCategoryProductCount = (categoryName: string) => {
-        return products.filter((p) => p.category === categoryName).length;
+        return products.filter((p) => p.categories?.includes(categoryName)).length;
     };
 
     const isCategoryInUse = (categoryName: string) => {

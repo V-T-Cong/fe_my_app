@@ -251,10 +251,19 @@ export default function ProductDetailPage() {
                                 <h1 className="text-3xl font-bold text-gray-900 mb-2">
                                     {product.title}
                                 </h1>
-                                <div className="flex items-center gap-4 mb-4">
-                                    <span className="inline-block bg-gray-100 text-gray-700 text-sm px-3 py-1 rounded-full">
-                                        {product.category}
-                                    </span>
+                                <div className="flex items-center gap-4 mb-4 flex-wrap">
+                                    {product.categories && product.categories.length > 0 ? (
+                                        product.categories.map((cat) => (
+                                            <span
+                                                key={cat}
+                                                className="inline-block bg-gray-100 text-gray-700 text-sm px-3 py-1 rounded-full"
+                                            >
+                                                {cat}
+                                            </span>
+                                        ))
+                                    ) : (
+                                        <span className="text-gray-400 text-sm">No categories</span>
+                                    )}
                                     {product.rating && (
                                         <div className="flex items-center text-amber-500 text-lg font-semibold">
                                             ★ {product.rating}
