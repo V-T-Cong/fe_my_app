@@ -15,6 +15,15 @@ export interface ProductKey {
   customerEmail?: string;
 }
 
+export interface ProductAccount {
+  id: string;
+  email: string;
+  password: string;
+  sold: boolean;
+  soldAt?: string;
+  customerEmail?: string;
+}
+
 export interface Product {
   id: number;
   title: string;
@@ -22,10 +31,16 @@ export interface Product {
   originalPrice?: string;
   discount?: string;
   rating?: number;
-  categories: string[];
+  category: string;
   color: string;
   initials: string;
+  // Product types
+  availableTypes: ("key" | "account")[];
+  keyPrice?: string;
+  accountPrice?: string;
   keys?: ProductKey[];
+  accounts?: ProductAccount[];
+  images?: string[];
 }
 
 interface ProductsState {
@@ -44,7 +59,7 @@ const productsSlice = createSlice({
   reducers: {
     initializeProducts: (state) => {
       if (!state.initialized) {
-        state.items = [
+        const allProducts = [
           ...FEATURED_GAMES,
           ...FEATURED_SOFTWARE,
           ...NEW_ARRIVALS,
@@ -52,15 +67,29 @@ const productsSlice = createSlice({
           ...GIFT_CARDS,
         ];
         
+        // Map products to include availableTypes
+        state.items = allProducts.map((product: any) => ({
+          ...product,
+          category: product.category || (product.categories ? product.categories[0] : "General"),
+          availableTypes: ["key", "account"] as ("key" | "account")[],
+          keyPrice: product.price,
+          accountPrice: product.originalPrice || product.price,
+        }));
+        
         // Add sample product keys to the first few products for demonstration
         if (state.items.length > 0) {
-          // Add keys to first product (sold and available)
+          // Add keys and accounts to first product
           state.items[0].keys = [
             { id: "key-1", key: "XXXX-YYYY-ZZZZ-1111", sold: true, soldAt: "2026-01-15T10:30:00Z", customerEmail: "customer1@example.com" },
             { id: "key-2", key: "XXXX-YYYY-ZZZZ-2222", sold: true, soldAt: "2026-01-18T14:20:00Z", customerEmail: "customer2@example.com" },
             { id: "key-3", key: "XXXX-YYYY-ZZZZ-3333", sold: false },
             { id: "key-4", key: "XXXX-YYYY-ZZZZ-4444", sold: false },
             { id: "key-5", key: "XXXX-YYYY-ZZZZ-5555", sold: false },
+          ];
+          state.items[0].accounts = [
+            { id: "acc-1", email: "account1@game.com", password: "Pass123!", sold: true, soldAt: "2026-01-16T11:00:00Z", customerEmail: "buyer1@example.com" },
+            { id: "acc-2", email: "account2@game.com", password: "Pass456!", sold: false },
+            { id: "acc-3", email: "account3@game.com", password: "Pass789!", sold: false },
           ];
         }
         
@@ -70,6 +99,10 @@ const productsSlice = createSlice({
             { id: "key-6", key: "AAAA-BBBB-CCCC-1111", sold: false },
             { id: "key-7", key: "AAAA-BBBB-CCCC-2222", sold: false },
             { id: "key-8", key: "AAAA-BBBB-CCCC-3333", sold: false },
+          ];
+          state.items[1].accounts = [
+            { id: "acc-4", email: "account4@game.com", password: "SecurePass1!", sold: false },
+            { id: "acc-5", email: "account5@game.com", password: "SecurePass2!", sold: false },
           ];
         }
         
@@ -168,6 +201,74 @@ const productsSlice = createSlice({
         }
       }
     },
+
+    // Account management actions
+    addProductAccount: (
+      state,
+      action: PayloadAction<{ productId: number; account: ProductAccount }>
+    ) => {
+      const product = state.items.find((p) => p.id === action.payload.productId);
+      if (product) {
+        if (!product.accounts) {
+          product.accounts = [];
+        }
+        product.accounts.push(action.payload.account);
+      }
+    },
+
+    updateProductAccount: (
+      state,
+      action: PayloadAction<{
+        productId: number;
+        accountId: string;
+        updatedAccount: ProductAccount;
+      }>
+    ) => {
+      const product = state.items.find((p) => p.id === action.payload.productId);
+      if (product && product.accounts) {
+        const accountIndex = product.accounts.findIndex(
+          (a) => a.id === action.payload.accountId
+        );
+        if (accountIndex !== -1) {
+          product.accounts[accountIndex] = action.payload.updatedAccount;
+        }
+      }
+    },
+
+    deleteProductAccount: (
+      state,
+      action: PayloadAction<{ productId: number; accountId: string }>
+    ) => {
+      const product = state.items.find((p) => p.id === action.payload.productId);
+      if (product && product.accounts) {
+        product.accounts = product.accounts.filter((a) => a.id !== action.payload.accountId);
+      }
+    },
+
+    toggleAccountSoldStatus: (
+      state,
+      action: PayloadAction<{
+        productId: number;
+        accountId: string;
+        sold: boolean;
+        customerEmail?: string;
+      }>
+    ) => {
+      const product = state.items.find((p) => p.id === action.payload.productId);
+      if (product && product.accounts) {
+        const account = product.accounts.find((a) => a.id === action.payload.accountId);
+        if (account) {
+          account.sold = action.payload.sold;
+          if (action.payload.sold) {
+            account.soldAt = new Date().toISOString();
+            account.customerEmail = action.payload.customerEmail;
+          } else {
+            account.soldAt = undefined;
+            account.customerEmail = undefined;
+          }
+        }
+      }
+    },
   },
 });
 
@@ -180,5 +281,9 @@ export const {
   updateProductKey,
   deleteProductKey,
   toggleKeySoldStatus,
+  addProductAccount,
+  updateProductAccount,
+  deleteProductAccount,
+  toggleAccountSoldStatus,
 } = productsSlice.actions;
 export default productsSlice.reducer;

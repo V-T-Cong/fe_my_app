@@ -14,7 +14,7 @@ interface GameProps {
 	originalPrice?: string;
 	discount?: string;
 	rating?: number;
-	category: string;
+	categories?: string[];
 	color: string;
 	initials: string;
 	badge?: string; // For "NEW" or Custom badges
@@ -32,7 +32,7 @@ export function GameCard({ game, badgeLabel }: { game: GameProps, badgeLabel?: s
 			price: game.price,
 			originalPrice: game.originalPrice,
 			discount: game.discount,
-			category: game.category,
+			category: game.categories?.[0] || "",
 			color: game.color,
 			initials: game.initials,
 		}));
@@ -49,7 +49,7 @@ export function GameCard({ game, badgeLabel }: { game: GameProps, badgeLabel?: s
 				originalPrice: game.originalPrice,
 				discount: game.discount,
 				rating: game.rating,
-				category: game.category,
+				category: game.categories?.[0] || "",
 				color: game.color,
 				initials: game.initials,
 			}));
@@ -84,7 +84,7 @@ export function GameCard({ game, badgeLabel }: { game: GameProps, badgeLabel?: s
 
 			<div className="p-4 flex flex-col grow">
 				<div className="flex justify-between items-center mb-2">
-					<span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{game.category}</span>
+					<span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{game.categories?.[0] || "Uncategorized"}</span>
 					{game.rating && (
 						<div className="flex items-center text-amber-400 text-xs font-bold">
 							<Star className="h-3 w-3 mr-1 fill-current" />

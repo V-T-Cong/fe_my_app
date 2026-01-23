@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
     initializeProducts,
-    addProduct,
-    updateProduct,
     deleteProduct,
     Product,
 } from "@/lib/redux/features/productsSlice";
@@ -29,8 +27,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ProductForm } from "@/components/admin/ProductForm";
-import { Plus, Pencil, Trash2, Search, Eye } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, Eye } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminProductsPage() {
@@ -39,8 +36,6 @@ export default function AdminProductsPage() {
     const initialized = useAppSelector((state) => state.products.initialized);
 
     const [searchQuery, setSearchQuery] = useState("");
-    const [isFormOpen, setIsFormOpen] = useState(false);
-    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
@@ -55,23 +50,7 @@ export default function AdminProductsPage() {
         product.categories?.some((cat) => cat.toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
-    const handleAddProduct = () => {
-        setEditingProduct(null);
-        setIsFormOpen(true);
-    };
 
-    const handleEditProduct = (product: Product) => {
-        setEditingProduct(product);
-        setIsFormOpen(true);
-    };
-
-    const handleSaveProduct = (product: Product) => {
-        if (editingProduct) {
-            dispatch(updateProduct(product));
-        } else {
-            dispatch(addProduct(product));
-        }
-    };
 
     const handleDeleteClick = (product: Product) => {
         setProductToDelete(product);
@@ -86,10 +65,6 @@ export default function AdminProductsPage() {
         }
     };
 
-    const getNextId = () => {
-        return products.length > 0 ? Math.max(...products.map((p) => p.id)) + 1 : 1;
-    };
-
     return (
         <div className="min-h-screen bg-gray-50">
             <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -99,13 +74,15 @@ export default function AdminProductsPage() {
                         <div>
                             <h1 className="text-3xl font-bold text-gray-900">Product Management</h1>
                             <p className="text-gray-600 mt-2">
-                                Manage your store products - {products.length} total products
+                                Manage your products - {products.length} total products
                             </p>
                         </div>
-                        <Button onClick={handleAddProduct} size="lg">
-                            <Plus className="h-5 w-5 mr-2" />
-                            Add New Product
-                        </Button>
+                        <Link href="/admin/products/new">
+                            <Button size="lg">
+                                <Plus className="h-5 w-5 mr-2" />
+                                Add New Product
+                            </Button>
+                        </Link>
                     </div>
                 </div>
 
@@ -150,8 +127,22 @@ export default function AdminProductsPage() {
                                     <TableRow key={product.id}>
                                         <TableCell className="font-medium">{product.id}</TableCell>
                                         <TableCell>
+                                            {product.images && product.images.length > 0 ? (
+                                                <img
+                                                    src={product.images[0]}
+                                                    alt={product.title}
+                                                    className="w-16 h-16 object-cover rounded"
+                                                    onError={(e) => {
+                                                        // Fallback to color/initials if image fails to load
+                                                        e.currentTarget.style.display = 'none';
+                                                        const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                                                        if (fallback) fallback.style.display = 'flex';
+                                                    }}
+                                                />
+                                            ) : null}
                                             <div
                                                 className={`w-16 h-16 rounded ${product.color} flex items-center justify-center`}
+                                                style={{ display: product.images && product.images.length > 0 ? 'none' : 'flex' }}
                                             >
                                                 <span className="text-white font-bold text-xs opacity-70">
                                                     {product.initials}
@@ -211,13 +202,11 @@ export default function AdminProductsPage() {
                                                         <Eye className="h-4 w-4" />
                                                     </Button>
                                                 </Link>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => handleEditProduct(product)}
-                                                >
-                                                    <Pencil className="h-4 w-4" />
-                                                </Button>
+                                                <Link href={`/admin/products/${product.id}/edit`}>
+                                                    <Button variant="outline" size="sm">
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Button>
+                                                </Link>
                                                 <Button
                                                     variant="outline"
                                                     size="sm"
@@ -235,14 +224,7 @@ export default function AdminProductsPage() {
                     </Table>
                 </div>
 
-                {/* Product Form Dialog */}
-                <ProductForm
-                    open={isFormOpen}
-                    onOpenChange={setIsFormOpen}
-                    onSave={handleSaveProduct}
-                    product={editingProduct}
-                    nextId={getNextId()}
-                />
+
 
                 {/* Delete Confirmation Dialog */}
                 <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

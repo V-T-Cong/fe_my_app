@@ -23,7 +23,7 @@ export default async function ProductPage({ params }: PageProps) {
 		notFound();
 	}
 
-	const relatedProducts = getRelatedProducts(product.category, product.id);
+	const relatedProducts = getRelatedProducts(product.category || "General", product.id);
 
 	return (
 		<div className="container mx-auto px-4 py-8">
@@ -31,8 +31,12 @@ export default async function ProductPage({ params }: PageProps) {
 			<nav className="text-sm text-gray-500 mb-8">
 				<Link href="/" className="hover:text-primary">Home</Link>
 				<span className="mx-2">/</span>
-				<Link href={`/category/${product.category.toLowerCase()}`} className="hover:text-primary">{product.category}</Link>
-				<span className="mx-2">/</span>
+				{product.category && (
+					<>
+						<Link href={`/category/${product.category.toLowerCase()}`} className="hover:text-primary">{product.category}</Link>
+						<span className="mx-2">/</span>
+					</>
+				)}
 				<span className="text-gray-900 font-medium">{product.title}</span>
 			</nav>
 
@@ -45,7 +49,7 @@ export default async function ProductPage({ params }: PageProps) {
 				<div className="lg:pl-4">
 					<div className="flex items-center gap-2 mb-3">
 						<span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide">
-							{product.category}
+							{product.category || "General"}
 						</span>
 						<div className="flex items-center text-amber-500 text-sm font-bold">
 							<span className="mr-1">★</span> {product.rating || "4.9"} <span className="text-gray-400 font-normal ml-1">(1.2k)</span>

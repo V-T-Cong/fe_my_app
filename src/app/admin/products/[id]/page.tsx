@@ -6,10 +6,15 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
     Product,
     ProductKey,
+    ProductAccount,
     addProductKey,
     updateProductKey,
     deleteProductKey,
     toggleKeySoldStatus,
+    addProductAccount,
+    updateProductAccount,
+    deleteProductAccount,
+    toggleAccountSoldStatus,
 } from "@/lib/redux/features/productsSlice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +45,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
     ArrowLeft,
     Key,
@@ -51,6 +57,7 @@ import {
     Trash2,
     ToggleLeft,
     ToggleRight,
+    User2,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -61,7 +68,10 @@ export default function ProductDetailPage() {
     const products = useAppSelector((state) => state.products.items);
     const [product, setProduct] = useState<Product | null>(null);
 
-    // Dialog states
+    // Tab state
+    const [activeTab, setActiveTab] = useState<"keys" | "accounts">("keys");
+
+    // Key dialog states
     const [isKeyDialogOpen, setIsKeyDialogOpen] = useState(false);
     const [editingKey, setEditingKey] = useState<ProductKey | null>(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -69,9 +79,22 @@ export default function ProductDetailPage() {
     const [soldDialogOpen, setSoldDialogOpen] = useState(false);
     const [keyToToggle, setKeyToToggle] = useState<ProductKey | null>(null);
 
-    // Form states
+    // Account dialog states
+    const [isAccountDialogOpen, setIsAccountDialogOpen] = useState(false);
+    const [editingAccount, setEditingAccount] = useState<ProductAccount | null>(null);
+    const [accountDeleteDialogOpen, setAccountDeleteDialogOpen] = useState(false);
+    const [accountToDelete, setAccountToDelete] = useState<ProductAccount | null>(null);
+    const [accountSoldDialogOpen, setAccountSoldDialogOpen] = useState(false);
+    const [accountToToggle, setAccountToToggle] = useState<ProductAccount | null>(null);
+
+    // Form states for keys
     const [keyValue, setKeyValue] = useState("");
     const [customerEmail, setCustomerEmail] = useState("");
+
+    // Form states for accounts
+    const [accountEmail, setAccountEmail] = useState("");
+    const [accountPassword, setAccountPassword] = useState("");
+    const [accountCustomerEmail, setAccountCustomerEmail] = useState("");
 
     useEffect(() => {
         const productId = parseInt(params.id as string);
@@ -83,6 +106,13 @@ export default function ProductDetailPage() {
         setKeyValue("");
         setCustomerEmail("");
         setEditingKey(null);
+    };
+
+    const resetAccountForm = () => {
+        setAccountEmail("");
+        setAccountPassword("");
+        setAccountCustomerEmail("");
+        setEditingAccount(null);
     };
 
     const handleAddKey = () => {
@@ -184,6 +214,109 @@ export default function ProductDetailPage() {
         setCustomerEmail("");
     };
 
+    // Account handlers
+    const handleAddAccount = () => {
+        resetAccountForm();
+        setIsAccountDialogOpen(true);
+    };
+
+    const handleEditAccount = (account: ProductAccount) => {
+        setEditingAccount(account);
+        setAccountEmail(account.email);
+        setAccountPassword(account.password);
+        setAccountCustomerEmail(account.customerEmail || "");
+        setIsAccountDialogOpen(true);
+    };
+
+    const handleSaveAccount = () => {
+        if (!product || !accountEmail.trim() || !accountPassword.trim()) return;
+
+        if (editingAccount) {
+            // Update existing account
+            const updatedAccount: ProductAccount = {
+                ...editingAccount,
+                email: accountEmail.trim(),
+                password: accountPassword.trim(),
+                customerEmail: editingAccount.sold ? accountCustomerEmail.trim() : undefined,
+            };
+            dispatch(
+                updateProductAccount({
+                    productId: product.id,
+                    accountId: editingAccount.id,
+                    updatedAccount,
+                })
+            );
+        } else {
+            // Add new account
+            const newAccount: ProductAccount = {
+                id: `acc-${Date.now()}`,
+                email: accountEmail.trim(),
+                password: accountPassword.trim(),
+                sold: false,
+            };
+            dispatch(addProductAccount({ productId: product.id, account: newAccount }));
+        }
+
+        setIsAccountDialogOpen(false);
+        resetAccountForm();
+    };
+
+    const handleDeleteAccountClick = (account: ProductAccount) => {
+        setAccountToDelete(account);
+        setAccountDeleteDialogOpen(true);
+    };
+
+    const handleConfirmAccountDelete = () => {
+        if (!product || !accountToDelete) return;
+
+        dispatch(
+            deleteProductAccount({
+                productId: product.id,
+                accountId: accountToDelete.id,
+            })
+        );
+
+        setAccountDeleteDialogOpen(false);
+        setAccountToDelete(null);
+    };
+
+    const handleToggleAccountSoldClick = (account: ProductAccount) => {
+        if (!product) return;
+
+        if (!account.sold) {
+            // Marking as sold - show dialog for customer email
+            setAccountToToggle(account);
+            setAccountCustomerEmail("");
+            setAccountSoldDialogOpen(true);
+        } else {
+            // Marking as available - no dialog needed
+            dispatch(
+                toggleAccountSoldStatus({
+                    productId: product.id,
+                    accountId: account.id,
+                    sold: false,
+                })
+            );
+        }
+    };
+
+    const handleConfirmAccountSold = () => {
+        if (!product || !accountToToggle) return;
+
+        dispatch(
+            toggleAccountSoldStatus({
+                productId: product.id,
+                accountId: accountToToggle.id,
+                sold: true,
+                customerEmail: accountCustomerEmail.trim() || undefined,
+            })
+        );
+
+        setAccountSoldDialogOpen(false);
+        setAccountToToggle(null);
+        setAccountCustomerEmail("");
+    };
+
     if (!product) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -210,6 +343,11 @@ export default function ProductDetailPage() {
     const totalKeys = keys.length;
     const soldKeys = keys.filter((k) => k.sold).length;
     const availableKeys = totalKeys - soldKeys;
+
+    const accounts = product.accounts || [];
+    const totalAccounts = accounts.length;
+    const soldAccounts = accounts.filter((a) => a.sold).length;
+    const availableAccounts = totalAccounts - soldAccounts;
 
     const formatDate = (dateString?: string) => {
         if (!dateString) return "-";
@@ -238,12 +376,28 @@ export default function ProductDetailPage() {
                     <div className="bg-white rounded-lg shadow-sm p-6">
                         <div className="flex items-start gap-6">
                             {/* Product Preview */}
-                            <div
-                                className={`w-32 h-32 rounded-lg ${product.color} flex items-center justify-center flex-shrink-0`}
-                            >
-                                <span className="text-white font-bold text-3xl opacity-70">
-                                    {product.initials}
-                                </span>
+                            <div className="flex-shrink-0">
+                                {product.images && product.images.length > 0 ? (
+                                    <img
+                                        src={product.images[0]}
+                                        alt={product.title}
+                                        className="w-32 h-32 object-cover rounded-lg"
+                                        onError={(e) => {
+                                            // Fallback to color/initials if image fails to load
+                                            e.currentTarget.style.display = 'none';
+                                            const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                                            if (fallback) fallback.style.display = 'flex';
+                                        }}
+                                    />
+                                ) : null}
+                                <div
+                                    className={`w-32 h-32 rounded-lg ${product.color} flex items-center justify-center`}
+                                    style={{ display: product.images && product.images.length > 0 ? 'none' : 'flex' }}
+                                >
+                                    <span className="text-white font-bold text-3xl opacity-70">
+                                        {product.initials}
+                                    </span>
+                                </div>
                             </div>
 
                             {/* Product Info */}
@@ -252,17 +406,14 @@ export default function ProductDetailPage() {
                                     {product.title}
                                 </h1>
                                 <div className="flex items-center gap-4 mb-4 flex-wrap">
-                                    {product.categories && product.categories.length > 0 ? (
-                                        product.categories.map((cat) => (
-                                            <span
-                                                key={cat}
-                                                className="inline-block bg-gray-100 text-gray-700 text-sm px-3 py-1 rounded-full"
-                                            >
-                                                {cat}
-                                            </span>
-                                        ))
+                                    {product.category ? (
+                                        <span
+                                            className="inline-block bg-gray-100 text-gray-700 text-sm px-3 py-1 rounded-full"
+                                        >
+                                            {product.category}
+                                        </span>
                                     ) : (
-                                        <span className="text-gray-400 text-sm">No categories</span>
+                                        <span className="text-gray-400 text-sm">No category</span>
                                     )}
                                     {product.rating && (
                                         <div className="flex items-center text-amber-500 text-lg font-semibold">
@@ -300,145 +451,316 @@ export default function ProductDetailPage() {
                             </div>
                         </div>
                     </div>
+
+                    {/* Image Gallery */}
+                    {product.images && product.images.length > 0 && (
+                        <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
+                            <h2 className="text-xl font-semibold text-gray-900 mb-4">Product Images</h2>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                {product.images.map((image, index) => (
+                                    <div
+                                        key={index}
+                                        className="relative aspect-square rounded-lg overflow-hidden border border-gray-200 group"
+                                    >
+                                        <img
+                                            src={image}
+                                            alt={`${product.title} - Image ${index + 1}`}
+                                            className="w-full h-full object-cover"
+                                        />
+                                        {index === 0 && (
+                                            <div className="absolute top-2 left-2 bg-primary text-white text-xs px-2 py-1 rounded">
+                                                Primary
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
-                {/* Keys Statistics */}
+                {/* Statistics */}
                 <div className="grid grid-cols-3 gap-6 mb-8">
                     <div className="bg-white rounded-lg shadow-sm p-6">
                         <div className="flex items-center gap-3 mb-2">
-                            <Key className="h-5 w-5 text-blue-600" />
-                            <h3 className="text-sm font-medium text-gray-500">Total Keys</h3>
+                            {activeTab === "keys" ? (
+                                <Key className="h-5 w-5 text-blue-600" />
+                            ) : (
+                                <User2 className="h-5 w-5 text-blue-600" />
+                            )}
+                            <h3 className="text-sm font-medium text-gray-500">
+                                Total {activeTab === "keys" ? "Keys" : "Accounts"}
+                            </h3>
                         </div>
-                        <p className="text-3xl font-bold text-gray-900">{totalKeys}</p>
+                        <p className="text-3xl font-bold text-gray-900">
+                            {activeTab === "keys" ? totalKeys : totalAccounts}
+                        </p>
                     </div>
 
                     <div className="bg-white rounded-lg shadow-sm p-6">
                         <div className="flex items-center gap-3 mb-2">
                             <CheckCircle2 className="h-5 w-5 text-green-600" />
-                            <h3 className="text-sm font-medium text-gray-500">Sold Keys</h3>
+                            <h3 className="text-sm font-medium text-gray-500">
+                                Sold {activeTab === "keys" ? "Keys" : "Accounts"}
+                            </h3>
                         </div>
-                        <p className="text-3xl font-bold text-green-600">{soldKeys}</p>
+                        <p className="text-3xl font-bold text-green-600">
+                            {activeTab === "keys" ? soldKeys : soldAccounts}
+                        </p>
                     </div>
 
                     <div className="bg-white rounded-lg shadow-sm p-6">
                         <div className="flex items-center gap-3 mb-2">
                             <XCircle className="h-5 w-5 text-orange-600" />
                             <h3 className="text-sm font-medium text-gray-500">
-                                Available Keys
+                                Available {activeTab === "keys" ? "Keys" : "Accounts"}
                             </h3>
                         </div>
-                        <p className="text-3xl font-bold text-orange-600">{availableKeys}</p>
+                        <p className="text-3xl font-bold text-orange-600">
+                            {activeTab === "keys" ? availableKeys : availableAccounts}
+                        </p>
                     </div>
                 </div>
 
-                {/* Product Keys Table */}
-                <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                    <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-                        <div>
-                            <h2 className="text-xl font-semibold text-gray-900">Product Keys</h2>
-                            <p className="text-sm text-gray-500 mt-1">
-                                Manage and track product keys for this item
-                            </p>
-                        </div>
-                        <Button onClick={handleAddKey}>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Key
-                        </Button>
-                    </div>
+                {/* Tabbed Interface for Keys and Accounts */}
+                <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "keys" | "accounts")}>
+                    <TabsList className="mb-4">
+                        <TabsTrigger value="keys" className="flex items-center gap-2">
+                            <Key className="h-4 w-4" />
+                            Product Keys
+                        </TabsTrigger>
+                        <TabsTrigger value="accounts" className="flex items-center gap-2">
+                            <User2 className="h-4 w-4" />
+                            Accounts
+                        </TabsTrigger>
+                    </TabsList>
 
-                    {totalKeys === 0 ? (
-                        <div className="px-6 py-12 text-center">
-                            <Key className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                            <p className="text-gray-500">No product keys available</p>
-                            <p className="text-sm text-gray-400 mt-1 mb-4">
-                                Add product keys to start tracking inventory
-                            </p>
-                            <Button onClick={handleAddKey} variant="outline">
-                                <Plus className="h-4 w-4 mr-2" />
-                                Add Your First Key
-                            </Button>
-                        </div>
-                    ) : (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-24">Key ID</TableHead>
-                                    <TableHead>Product Key / License</TableHead>
-                                    <TableHead className="w-32">Status</TableHead>
-                                    <TableHead>Sold Date</TableHead>
-                                    <TableHead>Customer Email</TableHead>
-                                    <TableHead className="w-48 text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {keys.map((key) => (
-                                    <TableRow key={key.id}>
-                                        <TableCell className="font-mono text-sm">
-                                            {key.id}
-                                        </TableCell>
-                                        <TableCell className="font-mono font-semibold">
-                                            {key.key}
-                                        </TableCell>
-                                        <TableCell>
-                                            {key.sold ? (
-                                                <span className="inline-flex items-center gap-1.5 bg-green-100 text-green-700 text-xs font-semibold px-3 py-1 rounded-full">
-                                                    <CheckCircle2 className="h-3 w-3" />
-                                                    Sold
-                                                </span>
-                                            ) : (
-                                                <span className="inline-flex items-center gap-1.5 bg-orange-100 text-orange-700 text-xs font-semibold px-3 py-1 rounded-full">
-                                                    <XCircle className="h-3 w-3" />
-                                                    Available
-                                                </span>
-                                            )}
-                                        </TableCell>
-                                        <TableCell className="text-sm text-gray-600">
-                                            {formatDate(key.soldAt)}
-                                        </TableCell>
-                                        <TableCell className="text-sm text-gray-600">
-                                            {key.customerEmail || "-"}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => handleToggleSoldClick(key)}
-                                                    title={
-                                                        key.sold
-                                                            ? "Mark as Available"
-                                                            : "Mark as Sold"
-                                                    }
-                                                >
+                    {/* Keys Tab */}
+                    <TabsContent value="keys">
+                        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+                            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                                <div>
+                                    <h2 className="text-xl font-semibold text-gray-900">Product Keys</h2>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        Manage and track product keys for this item
+                                    </p>
+                                </div>
+                                <Button onClick={handleAddKey}>
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Add Key
+                                </Button>
+                            </div>
+
+                            {totalKeys === 0 ? (
+                                <div className="px-6 py-12 text-center">
+                                    <Key className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                                    <p className="text-gray-500">No product keys available</p>
+                                    <p className="text-sm text-gray-400 mt-1 mb-4">
+                                        Add product keys to start tracking inventory
+                                    </p>
+                                    <Button onClick={handleAddKey} variant="outline">
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Add Your First Key
+                                    </Button>
+                                </div>
+                            ) : (
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead className="w-24">Key ID</TableHead>
+                                            <TableHead>Product Key / License</TableHead>
+                                            <TableHead className="w-32">Status</TableHead>
+                                            <TableHead>Sold Date</TableHead>
+                                            <TableHead>Customer Email</TableHead>
+                                            <TableHead className="w-48 text-right">Actions</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {keys.map((key) => (
+                                            <TableRow key={key.id}>
+                                                <TableCell className="font-mono text-sm">
+                                                    {key.id}
+                                                </TableCell>
+                                                <TableCell className="font-mono font-semibold">
+                                                    {key.key}
+                                                </TableCell>
+                                                <TableCell>
                                                     {key.sold ? (
-                                                        <ToggleRight className="h-4 w-4 text-green-600" />
+                                                        <span className="inline-flex items-center gap-1.5 bg-green-100 text-green-700 text-xs font-semibold px-3 py-1 rounded-full">
+                                                            <CheckCircle2 className="h-3 w-3" />
+                                                            Sold
+                                                        </span>
                                                     ) : (
-                                                        <ToggleLeft className="h-4 w-4 text-gray-400" />
+                                                        <span className="inline-flex items-center gap-1.5 bg-orange-100 text-orange-700 text-xs font-semibold px-3 py-1 rounded-full">
+                                                            <XCircle className="h-3 w-3" />
+                                                            Available
+                                                        </span>
                                                     )}
-                                                </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => handleEditKey(key)}
-                                                >
-                                                    <Pencil className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => handleDeleteClick(key)}
-                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    )}
-                </div>
+                                                </TableCell>
+                                                <TableCell className="text-sm text-gray-600">
+                                                    {formatDate(key.soldAt)}
+                                                </TableCell>
+                                                <TableCell className="text-sm text-gray-600">
+                                                    {key.customerEmail || "-"}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <div className="flex justify-end gap-2">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => handleToggleSoldClick(key)}
+                                                            title={
+                                                                key.sold
+                                                                    ? "Mark as Available"
+                                                                    : "Mark as Sold"
+                                                            }
+                                                        >
+                                                            {key.sold ? (
+                                                                <ToggleRight className="h-4 w-4 text-green-600" />
+                                                            ) : (
+                                                                <ToggleLeft className="h-4 w-4 text-gray-400" />
+                                                            )}
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => handleEditKey(key)}
+                                                        >
+                                                            <Pencil className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => handleDeleteClick(key)}
+                                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            )}
+                        </div>
+                    </TabsContent>
+
+                    {/* Accounts Tab */}
+                    <TabsContent value="accounts">
+                        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+                            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                                <div>
+                                    <h2 className="text-xl font-semibold text-gray-900">Product Accounts</h2>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        Manage and track product accounts for this item
+                                    </p>
+                                </div>
+                                <Button onClick={handleAddAccount}>
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    Add Account
+                                </Button>
+                            </div>
+
+                            {totalAccounts === 0 ? (
+                                <div className="px-6 py-12 text-center">
+                                    <User2 className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                                    <p className="text-gray-500">No product accounts available</p>
+                                    <p className="text-sm text-gray-400 mt-1 mb-4">
+                                        Add product accounts to start tracking inventory
+                                    </p>
+                                    <Button onClick={handleAddAccount} variant="outline">
+                                        <Plus className="h-4 w-4 mr-2" />
+                                        Add Your First Account
+                                    </Button>
+                                </div>
+                            ) : (
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead className="w-24">Account ID</TableHead>
+                                            <TableHead>Email</TableHead>
+                                            <TableHead>Password</TableHead>
+                                            <TableHead className="w-32">Status</TableHead>
+                                            <TableHead>Sold Date</TableHead>
+                                            <TableHead>Customer Email</TableHead>
+                                            <TableHead className="w-48 text-right">Actions</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {accounts.map((account) => (
+                                            <TableRow key={account.id}>
+                                                <TableCell className="font-mono text-sm">
+                                                    {account.id}
+                                                </TableCell>
+                                                <TableCell className="font-medium">
+                                                    {account.email}
+                                                </TableCell>
+                                                <TableCell className="font-mono text-sm">
+                                                    {account.password}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {account.sold ? (
+                                                        <span className="inline-flex items-center gap-1.5 bg-green-100 text-green-700 text-xs font-semibold px-3 py-1 rounded-full">
+                                                            <CheckCircle2 className="h-3 w-3" />
+                                                            Sold
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1.5 bg-orange-100 text-orange-700 text-xs font-semibold px-3 py-1 rounded-full">
+                                                            <XCircle className="h-3 w-3" />
+                                                            Available
+                                                        </span>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell className="text-sm text-gray-600">
+                                                    {formatDate(account.soldAt)}
+                                                </TableCell>
+                                                <TableCell className="text-sm text-gray-600">
+                                                    {account.customerEmail || "-"}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <div className="flex justify-end gap-2">
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => handleToggleAccountSoldClick(account)}
+                                                            title={
+                                                                account.sold
+                                                                    ? "Mark as Available"
+                                                                    : "Mark as Sold"
+                                                            }
+                                                        >
+                                                            {account.sold ? (
+                                                                <ToggleRight className="h-4 w-4 text-green-600" />
+                                                            ) : (
+                                                                <ToggleLeft className="h-4 w-4 text-gray-400" />
+                                                            )}
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => handleEditAccount(account)}
+                                                        >
+                                                            <Pencil className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => handleDeleteAccountClick(account)}
+                                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            )}
+                        </div>
+                    </TabsContent>
+                </Tabs>
 
                 {/* Add/Edit Key Dialog */}
                 <Dialog open={isKeyDialogOpen} onOpenChange={setIsKeyDialogOpen}>
@@ -546,6 +868,132 @@ export default function ProductDetailPage() {
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
                                 onClick={handleConfirmDelete}
+                                className="bg-red-600 hover:bg-red-700"
+                            >
+                                Delete
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+
+                {/* Add/Edit Account Dialog */}
+                <Dialog open={isAccountDialogOpen} onOpenChange={setIsAccountDialogOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>
+                                {editingAccount ? "Edit Account" : "Add New Account"}
+                            </DialogTitle>
+                            <DialogDescription>
+                                {editingAccount
+                                    ? "Update the account information below."
+                                    : "Enter the account credentials to add to inventory."}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="account-email">Email</Label>
+                                <Input
+                                    id="account-email"
+                                    type="email"
+                                    placeholder="account@example.com"
+                                    value={accountEmail}
+                                    onChange={(e) => setAccountEmail(e.target.value)}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="account-password">Password</Label>
+                                <Input
+                                    id="account-password"
+                                    type="text"
+                                    placeholder="Enter password"
+                                    value={accountPassword}
+                                    onChange={(e) => setAccountPassword(e.target.value)}
+                                />
+                            </div>
+                            {editingAccount?.sold && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="account-customer-email">Customer Email</Label>
+                                    <Input
+                                        id="account-customer-email"
+                                        type="email"
+                                        placeholder="customer@example.com"
+                                        value={accountCustomerEmail}
+                                        onChange={(e) => setAccountCustomerEmail(e.target.value)}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                        <DialogFooter>
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setIsAccountDialogOpen(false);
+                                    resetAccountForm();
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleSaveAccount}
+                                disabled={!accountEmail.trim() || !accountPassword.trim()}
+                            >
+                                {editingAccount ? "Update" : "Add"} Account
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Mark Account as Sold Dialog */}
+                <Dialog open={accountSoldDialogOpen} onOpenChange={setAccountSoldDialogOpen}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Mark Account as Sold</DialogTitle>
+                            <DialogDescription>
+                                Enter the customer's email address (optional) to track this sale.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="account-sold-customer-email">Customer Email</Label>
+                                <Input
+                                    id="account-sold-customer-email"
+                                    type="email"
+                                    placeholder="customer@example.com"
+                                    value={accountCustomerEmail}
+                                    onChange={(e) => setAccountCustomerEmail(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button
+                                variant="outline"
+                                onClick={() => {
+                                    setAccountSoldDialogOpen(false);
+                                    setAccountToToggle(null);
+                                    setAccountCustomerEmail("");
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button onClick={handleConfirmAccountSold}>Mark as Sold</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Delete Account Confirmation Dialog */}
+                <AlertDialog open={accountDeleteDialogOpen} onOpenChange={setAccountDeleteDialogOpen}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This will permanently delete the account{" "}
+                                <strong>{accountToDelete?.email}</strong>. This action cannot be undone.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                                onClick={handleConfirmAccountDelete}
                                 className="bg-red-600 hover:bg-red-700"
                             >
                                 Delete

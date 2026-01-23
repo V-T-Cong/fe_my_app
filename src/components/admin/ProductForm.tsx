@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { ImageUpload } from "@/components/admin/ImageUpload";
 import {
     Dialog,
     DialogContent,
@@ -21,6 +22,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Product } from "@/lib/redux/features/productsSlice";
+import { Star } from "lucide-react";
 
 interface ProductFormProps {
     open: boolean;
@@ -29,8 +31,6 @@ interface ProductFormProps {
     product?: Product | null;
     nextId: number;
 }
-
-
 
 const COLOR_OPTIONS = [
     { name: "Yellow-Red", value: "bg-gradient-to-br from-yellow-600 to-red-800" },
@@ -70,6 +70,7 @@ export function ProductForm({ open, onOpenChange, onSave, product, nextId }: Pro
         categories: [],
         color: COLOR_OPTIONS[0].value,
         initials: "",
+        images: [],
     });
 
     useEffect(() => {
@@ -86,6 +87,7 @@ export function ProductForm({ open, onOpenChange, onSave, product, nextId }: Pro
                 categories: [],
                 color: COLOR_OPTIONS[0].value,
                 initials: "",
+                images: [],
             });
         }
     }, [product, nextId, open]);
@@ -111,164 +113,260 @@ export function ProductForm({ open, onOpenChange, onSave, product, nextId }: Pro
         onOpenChange(false);
     };
 
+    const renderStarRating = () => {
+        const rating = formData.rating || 0;
+        return (
+            <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                        key={star}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, rating: star })}
+                        className="focus:outline-none transition-colors"
+                    >
+                        <Star
+                            className={`h-5 w-5 ${star <= rating
+                                    ? "fill-yellow-400 text-yellow-400"
+                                    : "text-gray-300"
+                                }`}
+                        />
+                    </button>
+                ))}
+            </div>
+        );
+    };
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>{product ? "Edit Product" : "Add New Product"}</DialogTitle>
+                    <DialogTitle className="text-2xl">
+                        {product ? "Edit Product" : "Add New Product"}
+                    </DialogTitle>
                     <DialogDescription>
-                        {product ? "Update the product details below." : "Fill in the details to create a new product."}
+                        {product
+                            ? "Update the product information below."
+                            : "Fill in the details to create a new product."}
                     </DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit}>
-                    <div className="grid gap-4 py-4">
-                        {/* Title */}
-                        <div className="grid gap-2">
-                            <Label htmlFor="title">Title *</Label>
-                            <Input
-                                id="title"
-                                value={formData.title}
-                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                required
+                    <div className="space-y-6 py-4">
+                        {/* Product Images */}
+                        <div className="space-y-2">
+                            <Label className="text-base font-semibold">Product Images</Label>
+                            <ImageUpload
+                                images={formData.images || []}
+                                onChange={(images) => setFormData({ ...formData, images })}
+                                maxImages={5}
                             />
                         </div>
 
-                        {/* Categories */}
-                        <div className="grid gap-2">
-                            <Label>Categories *</Label>
-                            <div className="border rounded-md p-4 max-h-64 overflow-y-auto">
-                                <div className="space-y-3">
-                                    {categories.map((cat) => (
-                                        <div key={cat.id} className="flex items-center space-x-3">
-                                            <Checkbox
-                                                id={`category-${cat.id}`}
-                                                checked={formData.categories?.includes(cat.name) || false}
-                                                onCheckedChange={() => handleCategoryToggle(cat.name)}
-                                            />
-                                            <label
-                                                htmlFor={`category-${cat.id}`}
-                                                className="flex items-center gap-2 cursor-pointer flex-1"
-                                            >
-                                                <div className={`w-4 h-4 rounded ${cat.color}`} />
-                                                <span className="text-sm font-medium">{cat.name}</span>
-                                            </label>
-                                        </div>
-                                    ))}
+                        {/* Two Column Grid */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Left Column */}
+                            <div className="space-y-4">
+                                {/* Title */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="title">
+                                        Title <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Input
+                                        id="title"
+                                        placeholder="e.g. Epic Adventure Game"
+                                        value={formData.title}
+                                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                        required
+                                        className="bg-gray-50"
+                                    />
+                                </div>
+
+                                {/* Price */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="price">
+                                        Price <span className="text-red-500">*</span>
+                                    </Label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                                            $
+                                        </span>
+                                        <Input
+                                            id="price"
+                                            placeholder="0.00"
+                                            value={formData.price.replace('$', '')}
+                                            onChange={(e) =>
+                                                setFormData({ ...formData, price: `$${e.target.value.replace('$', '')}` })
+                                            }
+                                            className="pl-7 bg-gray-50"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Original Price */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="originalPrice">Original Price (optional)</Label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                                            $
+                                        </span>
+                                        <Input
+                                            id="originalPrice"
+                                            placeholder="0.00"
+                                            value={formData.originalPrice?.replace('$', '') || ""}
+                                            onChange={(e) =>
+                                                setFormData({
+                                                    ...formData,
+                                                    originalPrice: e.target.value ? `$${e.target.value.replace('$', '')}` : "",
+                                                })
+                                            }
+                                            className="pl-7 bg-gray-50"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Discount */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="discount">Discount (%)</Label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                                            %
+                                        </span>
+                                        <Input
+                                            id="discount"
+                                            placeholder="0"
+                                            value={formData.discount?.replace('%', '').replace('-', '') || ""}
+                                            onChange={(e) =>
+                                                setFormData({
+                                                    ...formData,
+                                                    discount: e.target.value ? `-${e.target.value.replace('%', '').replace('-', '')}%` : "",
+                                                })
+                                            }
+                                            className="pl-7 bg-gray-50"
+                                        />
+                                    </div>
                                 </div>
                             </div>
-                            {formData.categories && formData.categories.length > 0 && (
-                                <div className="flex flex-wrap gap-2 mt-2">
+
+                            {/* Right Column */}
+                            <div className="space-y-4">
+                                {/* Categories */}
+                                <div className="space-y-2">
+                                    <Label className="text-base font-semibold">Categories</Label>
+                                    <div className="border rounded-lg p-4 bg-gray-50 max-h-48 overflow-y-auto">
+                                        <div className="space-y-3">
+                                            {categories.map((cat) => (
+                                                <div key={cat.id} className="flex items-center space-x-3">
+                                                    <Checkbox
+                                                        id={`category-${cat.id}`}
+                                                        checked={formData.categories?.includes(cat.name) || false}
+                                                        onCheckedChange={() => handleCategoryToggle(cat.name)}
+                                                    />
+                                                    <label
+                                                        htmlFor={`category-${cat.id}`}
+                                                        className="flex items-center gap-2 cursor-pointer flex-1"
+                                                    >
+                                                        <div className={`w-3 h-3 rounded ${cat.color}`} />
+                                                        <span className="text-sm font-medium">{cat.name}</span>
+                                                    </label>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Color/Gradient */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="color">Color / Gradient</Label>
+                                    <Select
+                                        value={formData.color}
+                                        onValueChange={(value) => setFormData({ ...formData, color: value })}
+                                    >
+                                        <SelectTrigger className="bg-gray-50">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {COLOR_OPTIONS.map((color) => (
+                                                <SelectItem key={color.value} value={color.value}>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`w-6 h-6 rounded ${color.value}`} />
+                                                        {color.name}
+                                                    </div>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {/* Initials and Rating Row */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    {/* Initials */}
+                                    <div className="space-y-2">
+                                        <Label htmlFor="initials">
+                                            Initials <span className="text-red-500">*</span>
+                                        </Label>
+                                        <Input
+                                            id="initials"
+                                            placeholder="e.g. EA"
+                                            value={formData.initials}
+                                            onChange={(e) =>
+                                                setFormData({ ...formData, initials: e.target.value.toUpperCase() })
+                                            }
+                                            maxLength={10}
+                                            required
+                                            className="bg-gray-50"
+                                        />
+                                    </div>
+
+                                    {/* Rating */}
+                                    <div className="space-y-2">
+                                        <Label>Rating</Label>
+                                        {renderStarRating()}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Selected Categories Badges */}
+                        {formData.categories && formData.categories.length > 0 && (
+                            <div className="space-y-2">
+                                <Label className="text-sm text-gray-600">Selected Categories:</Label>
+                                <div className="flex flex-wrap gap-2">
                                     {formData.categories.map((catName) => {
                                         const category = categories.find((c) => c.name === catName);
                                         return (
                                             <span
                                                 key={catName}
-                                                className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium text-white ${category?.color || "bg-gray-500"}`}
+                                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-white ${category?.color || "bg-gray-500"
+                                                    }`}
                                             >
                                                 {catName}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleCategoryToggle(catName)}
+                                                    className="hover:bg-white/20 rounded-full p-0.5"
+                                                >
+                                                    ×
+                                                </button>
                                             </span>
                                         );
                                     })}
                                 </div>
-                            )}
-                        </div>
-
-                        {/* Price and Original Price */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label htmlFor="price">Price *</Label>
-                                <Input
-                                    id="price"
-                                    placeholder="$29.99"
-                                    value={formData.price}
-                                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                                    required
-                                />
                             </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="originalPrice">Original Price</Label>
-                                <Input
-                                    id="originalPrice"
-                                    placeholder="$59.99"
-                                    value={formData.originalPrice || ""}
-                                    onChange={(e) => setFormData({ ...formData, originalPrice: e.target.value })}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Discount and Rating */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="grid gap-2">
-                                <Label htmlFor="discount">Discount</Label>
-                                <Input
-                                    id="discount"
-                                    placeholder="-50%"
-                                    value={formData.discount || ""}
-                                    onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
-                                />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="rating">Rating (0-5)</Label>
-                                <Input
-                                    id="rating"
-                                    type="number"
-                                    step="0.1"
-                                    min="0"
-                                    max="5"
-                                    placeholder="4.5"
-                                    value={formData.rating || ""}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, rating: e.target.value ? parseFloat(e.target.value) : undefined })
-                                    }
-                                />
-                            </div>
-                        </div>
-
-                        {/* Color */}
-                        <div className="grid gap-2">
-                            <Label htmlFor="color">Color/Gradient *</Label>
-                            <Select
-                                value={formData.color}
-                                onValueChange={(value) => setFormData({ ...formData, color: value })}
-                                required
-                            >
-                                <SelectTrigger>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {COLOR_OPTIONS.map((color) => (
-                                        <SelectItem key={color.value} value={color.value}>
-                                            <div className="flex items-center gap-2">
-                                                <div className={`w-6 h-6 rounded ${color.value}`} />
-                                                {color.name}
-                                            </div>
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        {/* Initials */}
-                        <div className="grid gap-2">
-                            <Label htmlFor="initials">Initials *</Label>
-                            <Input
-                                id="initials"
-                                placeholder="GOW"
-                                value={formData.initials}
-                                onChange={(e) => setFormData({ ...formData, initials: e.target.value.toUpperCase() })}
-                                maxLength={10}
-                                required
-                            />
-                            <p className="text-xs text-gray-500">Short text displayed on product placeholder</p>
-                        </div>
+                        )}
                     </div>
 
-                    <DialogFooter>
-                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                    <DialogFooter className="gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => onOpenChange(false)}
+                        >
                             Cancel
                         </Button>
-                        <Button type="submit">{product ? "Update Product" : "Add Product"}</Button>
+                        <Button type="submit" className="bg-primary">
+                            {product ? "Update Product" : "Add Product"}
+                        </Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
