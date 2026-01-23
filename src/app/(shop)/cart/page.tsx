@@ -177,9 +177,17 @@ export default function CartPage() {
                                                     >
                                                         {item.title}
                                                     </Link>
-                                                    <span className="inline-block text-xs text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
-                                                        {item.category}
-                                                    </span>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="inline-block text-xs text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+                                                            {item.category}
+                                                        </span>
+                                                        <span className={`inline-block text-xs font-semibold px-3 py-1 rounded-full ${item.productType === "key"
+                                                                ? "bg-blue-100 text-blue-700"
+                                                                : "bg-purple-100 text-purple-700"
+                                                            }`}>
+                                                            {item.productType === "key" ? "🔑 Key" : "👤 Account"}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                                 <Button
                                                     variant="ghost"

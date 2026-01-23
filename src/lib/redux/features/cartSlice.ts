@@ -10,6 +10,7 @@ export interface CartItem {
   color: string;
   initials: string;
   quantity: number;
+  productType: "key" | "account"; // Track which type customer is purchasing
 }
 
 interface CartState {

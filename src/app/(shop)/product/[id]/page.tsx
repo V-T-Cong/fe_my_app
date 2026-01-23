@@ -3,6 +3,7 @@ import { getProductById, getRelatedProducts } from "@/lib/productUtils";
 import { GameCard } from "@/components/GameCard";
 import { ProductGallery } from "@/components/ProductGallery";
 import { ProductActions } from "@/components/ProductActions";
+import { ProductReviews } from "@/components/ProductReviews";
 import {
 	ShieldCheck,
 	Zap,
@@ -106,6 +107,9 @@ export default async function ProductPage({ params }: PageProps) {
 
 				</div>
 			</div>
+
+			{/* Customer Reviews Section */}
+			<ProductReviews productId={product.id} />
 
 			{/* 4. RELATED PRODUCTS */}
 			{relatedProducts.length > 0 && (
