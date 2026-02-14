@@ -1,12 +1,9 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import {
-  categoryService,
-  type Category,
-  type CategoryRequest,
-} from "@/services/category.services";
+import { categoryService } from "@/services/category.services";
+import type { Category, CategoryRequest } from "@/types";
 
 // Re-export the Category type for use in components
-export type { Category } from "@/services/category.services";
+export type { Category } from "@/types";
 
 interface CategoriesState {
   items: Category[];

@@ -1,19 +1,5 @@
 import api from "@/lib/axios";
-
-export interface CategoryRequest {
-  name: string;
-  description: string;
-  color: string;
-}
-
-export interface Category {
-  id: string; // UUID
-  createdAt: string;
-  updatedAt: string;
-  name: string;
-  description: string;
-  color: string;
-}
+import type { Category, CategoryRequest } from "@/types";
 
 export const categoryService = {
   getAll: async () => {
