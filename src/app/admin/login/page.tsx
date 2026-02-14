@@ -2,12 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { authService } from "@/services/auth.services";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Shield } from "lucide-react";
-import { AxiosError } from "axios";
 
 export default function AdminLoginPage() {
     const [email, setEmail] = useState("");
@@ -38,16 +36,24 @@ export default function AdminLoginPage() {
 
         try {
             setLoading(true);
-            const data = await authService.login({ email, password });
-            localStorage.setItem("accessToken", data.accessToken);
-            localStorage.setItem("refreshToken", data.refreshToken);
-            router.push("/admin/products");
-        } catch (err) {
-            if (err instanceof AxiosError && err.response?.status === 401) {
-                setError("Invalid email or password.");
-            } else {
-                setError("Login failed. Please try again later.");
+            const res = await fetch("/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
+            });
+
+            if (!res.ok) {
+                if (res.status === 401) {
+                    setError("Invalid email or password.");
+                } else {
+                    setError("Login failed. Please try again later.");
+                }
+                return;
             }
+
+            router.push("/admin/products");
+        } catch {
+            setError("Login failed. Please try again later.");
         } finally {
             setLoading(false);
         }

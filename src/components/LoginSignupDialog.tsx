@@ -12,12 +12,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { authService } from "@/services/auth.services";
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 import { useRouter } from "next/navigation"
-import { AxiosError } from "axios";
 
 
 export function LoginSignupDialog({ trigger }: { trigger: React.ReactNode }) {
@@ -31,7 +29,6 @@ export function LoginSignupDialog({ trigger }: { trigger: React.ReactNode }) {
   const router = useRouter();
 
   const isValidEmail = (email: string) => {
-    // This regex checks for characters + @ + characters + . + characters
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
@@ -50,18 +47,24 @@ export function LoginSignupDialog({ trigger }: { trigger: React.ReactNode }) {
 
     try {
       setLoading(true);
-      const data = await authService.login({ email, password });
-      localStorage.setItem("accessToken", data.accessToken);
-      localStorage.setItem("refreshToken", data.refreshToken);
-      router.push("/dashboard");
-    } catch (error) {
-      console.error("Login failed:", error);
-      if (error instanceof AxiosError && error.response?.status === 401) {
-        setError("Invalid email or password.");
-      } else {
-        // Fallback for other errors (500, network issues, etc.)
-        setError("Login failed. Please try again later.");
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          setError("Invalid email or password.");
+        } else {
+          setError("Login failed. Please try again later.");
+        }
+        return;
       }
+
+      router.push("/dashboard");
+    } catch {
+      setError("Login failed. Please try again later.");
     } finally {
       setLoading(false);
     }
