@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { addProduct, initializeProducts } from "@/lib/redux/features/productsSlice";
-import { initializeCategories } from "@/lib/redux/features/categoriesSlice";
+import { fetchCategories } from "@/lib/redux/features/categoriesSlice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,17 +43,17 @@ export default function NewProductPage() {
     const products = useAppSelector((state) => state.products.items);
     const categories = useAppSelector((state) => state.categories.items);
     const productsInitialized = useAppSelector((state) => state.products.initialized);
-    const categoriesInitialized = useAppSelector((state) => state.categories.initialized);
+    const categoriesLoading = useAppSelector((state) => state.categories.loading);
 
     // Initialize products and categories
     useEffect(() => {
         if (!productsInitialized) {
             dispatch(initializeProducts());
         }
-        if (!categoriesInitialized) {
-            dispatch(initializeCategories());
+        if (categories.length === 0 && !categoriesLoading) {
+            dispatch(fetchCategories());
         }
-    }, [dispatch, productsInitialized, categoriesInitialized]);
+    }, [dispatch, productsInitialized, categories.length, categoriesLoading]);
 
     const [formData, setFormData] = useState({
         id: 1,
@@ -370,7 +370,7 @@ export default function NewProductPage() {
                                                         htmlFor={`category-${cat.id}`}
                                                         className="flex items-center gap-2 cursor-pointer flex-1"
                                                     >
-                                                        <div className={`w-4 h-4 rounded ${cat.color}`} />
+                                                        <div className="w-4 h-4 rounded" style={{ backgroundColor: cat.color }} />
                                                         <span className="text-base font-medium">{cat.name}</span>
                                                     </label>
                                                 </div>
@@ -441,8 +441,8 @@ export default function NewProductPage() {
                                         return (
                                             <span
                                                 key={catName}
-                                                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-white ${category?.color || "bg-gray-500"
-                                                    }`}
+                                                className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium text-white"
+                                                style={{ backgroundColor: category?.color || '#6b7280' }}
                                             >
                                                 {catName}
                                                 <button

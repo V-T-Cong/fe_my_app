@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { initializeCategories } from "@/lib/redux/features/categoriesSlice";
+import { fetchCategories } from "@/lib/redux/features/categoriesSlice";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,13 +52,13 @@ const COLOR_OPTIONS = [
 export function ProductForm({ open, onOpenChange, onSave, product, nextId }: ProductFormProps) {
     const dispatch = useAppDispatch();
     const categories = useAppSelector((state) => state.categories.items);
-    const categoriesInitialized = useAppSelector((state) => state.categories.initialized);
+    const categoriesLoading = useAppSelector((state) => state.categories.loading);
 
     useEffect(() => {
-        if (!categoriesInitialized) {
-            dispatch(initializeCategories());
+        if (categories.length === 0 && !categoriesLoading) {
+            dispatch(fetchCategories());
         }
-    }, [dispatch, categoriesInitialized]);
+    }, [dispatch, categories.length, categoriesLoading]);
 
     const [formData, setFormData] = useState<Product>({
         id: nextId,
@@ -126,8 +126,8 @@ export function ProductForm({ open, onOpenChange, onSave, product, nextId }: Pro
                     >
                         <Star
                             className={`h-5 w-5 ${star <= rating
-                                    ? "fill-yellow-400 text-yellow-400"
-                                    : "text-gray-300"
+                                ? "fill-yellow-400 text-yellow-400"
+                                : "text-gray-300"
                                 }`}
                         />
                     </button>
@@ -266,7 +266,7 @@ export function ProductForm({ open, onOpenChange, onSave, product, nextId }: Pro
                                                         htmlFor={`category-${cat.id}`}
                                                         className="flex items-center gap-2 cursor-pointer flex-1"
                                                     >
-                                                        <div className={`w-3 h-3 rounded ${cat.color}`} />
+                                                        <div className="w-3 h-3 rounded" style={{ backgroundColor: cat.color }} />
                                                         <span className="text-sm font-medium">{cat.name}</span>
                                                     </label>
                                                 </div>
@@ -337,8 +337,8 @@ export function ProductForm({ open, onOpenChange, onSave, product, nextId }: Pro
                                         return (
                                             <span
                                                 key={catName}
-                                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-white ${category?.color || "bg-gray-500"
-                                                    }`}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-white"
+                                                style={{ backgroundColor: category?.color || '#6b7280' }}
                                             >
                                                 {catName}
                                                 <button

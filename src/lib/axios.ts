@@ -28,17 +28,27 @@ axiosClient.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const response = await axiosClient.post("/auth/refresh-token");
+        const refreshToken = localStorage.getItem("refreshToken");
+        if (!refreshToken) throw new Error("No refresh token");
+
+        const response = await axiosClient.post("/api/auth/refresh-token", {
+          refreshToken,
+        });
 
         const newAccessToken = response.data.accessToken;
         localStorage.setItem("accessToken", newAccessToken);
+
+        if (response.data.refreshToken) {
+          localStorage.setItem("refreshToken", response.data.refreshToken);
+        }
 
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
 
         return axiosClient(originalRequest);
       } catch (refreshError) {
         localStorage.removeItem("accessToken");
-        window.location.href = "/login";
+        localStorage.removeItem("refreshToken");
+        window.location.href = "/";
         return Promise.reject(refreshError);
       }
     }

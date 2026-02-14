@@ -51,7 +51,8 @@ export function LoginSignupDialog({ trigger }: { trigger: React.ReactNode }) {
     try {
       setLoading(true);
       const data = await authService.login({ email, password });
-      console.log("Login success:", data);
+      localStorage.setItem("accessToken", data.accessToken);
+      localStorage.setItem("refreshToken", data.refreshToken);
       router.push("/dashboard");
     } catch (error) {
       console.error("Login failed:", error);
@@ -112,7 +113,7 @@ export function LoginSignupDialog({ trigger }: { trigger: React.ReactNode }) {
                 }}
               />
 
-              <Button 
+              <Button
                 type="button"
                 variant="ghost"
                 size="icon"

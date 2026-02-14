@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
-    initializeCategories,
-    addCategory,
-    updateCategory,
-    deleteCategory,
-    Category,
+    fetchCategories,
+    createCategory,
+    updateCategoryLocal,
+    deleteCategoryLocal,
+    type Category,
 } from "@/lib/redux/features/categoriesSlice";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,8 +48,8 @@ import { Plus, Pencil, Trash2, Tag } from "lucide-react";
 export default function CategoriesPage() {
     const dispatch = useAppDispatch();
     const categories = useAppSelector((state) => state.categories.items);
-    const initialized = useAppSelector((state) => state.categories.initialized);
-    const products = useAppSelector((state) => state.products.items);
+    const loading = useAppSelector((state) => state.categories.loading);
+    const error = useAppSelector((state) => state.categories.error);
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -61,10 +62,14 @@ export default function CategoriesPage() {
     const [color, setColor] = useState("#3b82f6");
 
     useEffect(() => {
-        if (!initialized) {
-            dispatch(initializeCategories());
+        dispatch(fetchCategories());
+    }, [dispatch]);
+
+    useEffect(() => {
+        if (error) {
+            toast.error(error);
         }
-    }, [dispatch, initialized]);
+    }, [error]);
 
     const resetForm = () => {
         setName("");
@@ -86,31 +91,32 @@ export default function CategoriesPage() {
         setIsDialogOpen(true);
     };
 
-    const handleSaveCategory = () => {
+    const handleSaveCategory = async () => {
         if (!name.trim()) return;
 
-        const slug = name.toLowerCase().replace(/\s+/g, "-");
-
         if (editingCategory) {
-            // Update existing category
+            // Update existing category (local only until BE supports update)
             const updatedCategory: Category = {
                 ...editingCategory,
                 name: name.trim(),
-                slug,
-                description: description.trim() || undefined,
+                description: description.trim(),
                 color,
             };
-            dispatch(updateCategory(updatedCategory));
+            dispatch(updateCategoryLocal(updatedCategory));
+            toast.success("Category updated locally");
         } else {
-            // Add new category
-            const newCategory: Category = {
-                id: categories.length > 0 ? Math.max(...categories.map((c) => c.id)) + 1 : 1,
-                name: name.trim(),
-                slug,
-                description: description.trim() || undefined,
-                color,
-            };
-            dispatch(addCategory(newCategory));
+            // Create via API
+            try {
+                await dispatch(createCategory({
+                    name: name.trim(),
+                    description: description.trim(),
+                    color,
+                })).unwrap();
+                toast.success("Category created successfully");
+            } catch {
+                toast.error("Failed to create category");
+                return;
+            }
         }
 
         setIsDialogOpen(false);
@@ -125,18 +131,13 @@ export default function CategoriesPage() {
     const handleConfirmDelete = () => {
         if (!categoryToDelete) return;
 
-        dispatch(deleteCategory(categoryToDelete.id));
+        dispatch(deleteCategoryLocal(categoryToDelete.id));
+        toast.success("Category deleted locally");
         setDeleteDialogOpen(false);
         setCategoryToDelete(null);
     };
 
-    const getCategoryProductCount = (categoryName: string) => {
-        return products.filter((p) => p.categories?.includes(categoryName)).length;
-    };
 
-    const isCategoryInUse = (categoryName: string) => {
-        return getCategoryProductCount(categoryName) > 0;
-    };
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -164,71 +165,57 @@ export default function CategoriesPage() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="w-16">ID</TableHead>
                                 <TableHead className="w-24">Color</TableHead>
                                 <TableHead>Name</TableHead>
                                 <TableHead>Description</TableHead>
-                                <TableHead className="w-32">Products</TableHead>
                                 <TableHead className="w-32 text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {categories.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center py-12 text-gray-500">
-                                        No categories available. Add your first category to get started.
+                                    <TableCell colSpan={4} className="text-center py-12 text-gray-500">
+                                        {loading ? "Loading categories..." : "No categories available. Add your first category to get started."}
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                categories.map((category) => {
-                                    const productCount = getCategoryProductCount(category.name);
-                                    return (
-                                        <TableRow key={category.id}>
-                                            <TableCell className="font-medium">
-                                                {category.id}
-                                            </TableCell>
-                                            <TableCell>
-                                                <div
-                                                    className="w-12 h-12 rounded flex items-center justify-center"
-                                                    style={{ backgroundColor: category.color }}
+                                categories.map((category) => (
+                                    <TableRow key={category.id}>
+                                        <TableCell>
+                                            <div
+                                                className="w-12 h-12 rounded flex items-center justify-center"
+                                                style={{ backgroundColor: category.color }}
+                                            >
+                                                <Tag className="h-6 w-6 text-white" />
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="font-semibold">
+                                            {category.name}
+                                        </TableCell>
+                                        <TableCell className="text-gray-600">
+                                            {category.description || "-"}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex justify-end gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleEditCategory(category)}
                                                 >
-                                                    <Tag className="h-6 w-6 text-white" />
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="font-semibold">
-                                                {category.name}
-                                            </TableCell>
-                                            <TableCell className="text-gray-600">
-                                                {category.description || "-"}
-                                            </TableCell>
-                                            <TableCell>
-                                                <span className="inline-block bg-blue-100 text-blue-700 text-sm font-semibold px-3 py-1 rounded-full">
-                                                    {productCount} {productCount === 1 ? "product" : "products"}
-                                                </span>
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <div className="flex justify-end gap-2">
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => handleEditCategory(category)}
-                                                    >
-                                                        <Pencil className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        onClick={() => handleDeleteClick(category)}
-                                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                        disabled={isCategoryInUse(category.name)}
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })
+                                                    <Pencil className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => handleDeleteClick(category)}
+                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
                             )}
                         </TableBody>
                     </Table>
@@ -312,7 +299,7 @@ export default function CategoriesPage() {
                             >
                                 Cancel
                             </Button>
-                            <Button onClick={handleSaveCategory} disabled={!name.trim()}>
+                            <Button onClick={handleSaveCategory} disabled={!name.trim() || loading}>
                                 {editingCategory ? "Update" : "Add"} Category
                             </Button>
                         </DialogFooter>

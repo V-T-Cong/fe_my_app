@@ -40,6 +40,7 @@ export default function AdminLoginPage() {
             setLoading(true);
             const data = await authService.login({ email, password });
             localStorage.setItem("accessToken", data.accessToken);
+            localStorage.setItem("refreshToken", data.refreshToken);
             router.push("/admin/products");
         } catch (err) {
             if (err instanceof AxiosError && err.response?.status === 401) {
