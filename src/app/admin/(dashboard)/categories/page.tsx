@@ -39,30 +39,10 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+
 import { Plus, Pencil, Trash2, Tag } from "lucide-react";
 
-const COLOR_OPTIONS = [
-    { value: "bg-red-500", label: "Red" },
-    { value: "bg-orange-500", label: "Orange" },
-    { value: "bg-yellow-500", label: "Yellow" },
-    { value: "bg-green-500", label: "Green" },
-    { value: "bg-teal-500", label: "Teal" },
-    { value: "bg-cyan-500", label: "Cyan" },
-    { value: "bg-blue-500", label: "Blue" },
-    { value: "bg-indigo-500", label: "Indigo" },
-    { value: "bg-purple-500", label: "Purple" },
-    { value: "bg-pink-500", label: "Pink" },
-    { value: "bg-rose-500", label: "Rose" },
-    { value: "bg-slate-500", label: "Slate" },
-    { value: "bg-gray-500", label: "Gray" },
-];
+
 
 export default function CategoriesPage() {
     const dispatch = useAppDispatch();
@@ -78,7 +58,7 @@ export default function CategoriesPage() {
     // Form states
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
-    const [color, setColor] = useState("bg-blue-500");
+    const [color, setColor] = useState("#3b82f6");
 
     useEffect(() => {
         if (!initialized) {
@@ -89,7 +69,7 @@ export default function CategoriesPage() {
     const resetForm = () => {
         setName("");
         setDescription("");
-        setColor("bg-blue-500");
+        setColor("#3b82f6");
         setEditingCategory(null);
     };
 
@@ -209,7 +189,8 @@ export default function CategoriesPage() {
                                             </TableCell>
                                             <TableCell>
                                                 <div
-                                                    className={`w-12 h-12 rounded ${category.color} flex items-center justify-center`}
+                                                    className="w-12 h-12 rounded flex items-center justify-center"
+                                                    style={{ backgroundColor: category.color }}
                                                 >
                                                     <Tag className="h-6 w-6 text-white" />
                                                 </div>
@@ -288,28 +269,37 @@ export default function CategoriesPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="color">Color</Label>
-                                <Select value={color} onValueChange={setColor}>
-                                    <SelectTrigger>
-                                        <SelectValue>
-                                            <div className="flex items-center gap-2">
-                                                <div className={`w-4 h-4 rounded ${color}`} />
-                                                <span>
-                                                    {COLOR_OPTIONS.find((c) => c.value === color)?.label}
-                                                </span>
-                                            </div>
-                                        </SelectValue>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {COLOR_OPTIONS.map((option) => (
-                                            <SelectItem key={option.value} value={option.value}>
-                                                <div className="flex items-center gap-2">
-                                                    <div className={`w-4 h-4 rounded ${option.value}`} />
-                                                    <span>{option.label}</span>
-                                                </div>
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                <div className="flex items-center gap-3">
+                                    <div className="relative">
+                                        <input
+                                            id="color"
+                                            type="color"
+                                            value={color}
+                                            onChange={(e) => setColor(e.target.value)}
+                                            className="w-12 h-12 rounded-lg border-2 border-gray-200 cursor-pointer p-0.5 hover:border-primary transition-colors [&::-webkit-color-swatch-wrapper]{padding:0} [&::-webkit-color-swatch]{border:none;border-radius:6px}"
+                                        />
+                                    </div>
+                                    <div className="flex-1">
+                                        <Input
+                                            value={color}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                if (/^#[0-9A-Fa-f]{0,6}$/.test(val)) {
+                                                    setColor(val);
+                                                }
+                                            }}
+                                            placeholder="#3b82f6"
+                                            className="font-mono text-sm uppercase"
+                                            maxLength={7}
+                                        />
+                                    </div>
+                                    <div
+                                        className="w-12 h-12 rounded-lg border-2 border-gray-200 flex items-center justify-center shrink-0"
+                                        style={{ backgroundColor: color }}
+                                    >
+                                        <Tag className="h-5 w-5 text-white drop-shadow-sm" />
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <DialogFooter>

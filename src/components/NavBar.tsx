@@ -87,9 +87,6 @@ export function NavBar() {
                   <DropdownMenuItem>Wishlist</DropdownMenuItem>
                 </Link>
                 <DropdownMenuSeparator />
-                <Link href="/admin/products">
-                  <DropdownMenuItem>Admin</DropdownMenuItem>
-                </Link>
                 <DropdownMenuItem>Support</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <LoginSignupDialog trigger={

@@ -26,21 +26,21 @@ const categoriesSlice = createSlice({
       if (!state.initialized) {
         // Initialize with common categories from existing products
         state.items = [
-          { id: 1, name: "RPG", slug: "rpg", description: "Role-Playing Games", color: "bg-purple-500" },
-          { id: 2, name: "Action", slug: "action", description: "Action Games", color: "bg-red-500" },
-          { id: 3, name: "Sandbox", slug: "sandbox", description: "Sandbox Games", color: "bg-green-500" },
-          { id: 4, name: "Adventure", slug: "adventure", description: "Adventure Games", color: "bg-blue-500" },
-          { id: 5, name: "Shooter", slug: "shooter", description: "Shooter Games", color: "bg-orange-500" },
-          { id: 6, name: "Sports", slug: "sports", description: "Sports Games", color: "bg-yellow-500" },
-          { id: 7, name: "OS", slug: "os", description: "Operating Systems", color: "bg-indigo-500" },
-          { id: 8, name: "Productivity", slug: "productivity", description: "Productivity Software", color: "bg-teal-500" },
-          { id: 9, name: "Security", slug: "security", description: "Security Software", color: "bg-cyan-500" },
-          { id: 10, name: "Creative", slug: "creative", description: "Creative Software", color: "bg-pink-500" },
-          { id: 11, name: "Antivirus", slug: "antivirus", description: "Antivirus Software", color: "bg-rose-500" },
-          { id: 12, name: "Steam", slug: "steam", description: "Steam Gift Cards", color: "bg-slate-500" },
-          { id: 13, name: "PSN", slug: "psn", description: "PlayStation Network Cards", color: "bg-blue-600" },
-          { id: 14, name: "Xbox", slug: "xbox", description: "Xbox Gift Cards", color: "bg-green-600" },
-          { id: 15, name: "Apple", slug: "apple", description: "Apple Gift Cards", color: "bg-gray-500" },
+          { id: 1, name: "RPG", slug: "rpg", description: "Role-Playing Games", color: "#a855f7" },
+          { id: 2, name: "Action", slug: "action", description: "Action Games", color: "#ef4444" },
+          { id: 3, name: "Sandbox", slug: "sandbox", description: "Sandbox Games", color: "#22c55e" },
+          { id: 4, name: "Adventure", slug: "adventure", description: "Adventure Games", color: "#3b82f6" },
+          { id: 5, name: "Shooter", slug: "shooter", description: "Shooter Games", color: "#f97316" },
+          { id: 6, name: "Sports", slug: "sports", description: "Sports Games", color: "#eab308" },
+          { id: 7, name: "OS", slug: "os", description: "Operating Systems", color: "#6366f1" },
+          { id: 8, name: "Productivity", slug: "productivity", description: "Productivity Software", color: "#14b8a6" },
+          { id: 9, name: "Security", slug: "security", description: "Security Software", color: "#06b6d4" },
+          { id: 10, name: "Creative", slug: "creative", description: "Creative Software", color: "#ec4899" },
+          { id: 11, name: "Antivirus", slug: "antivirus", description: "Antivirus Software", color: "#f43f5e" },
+          { id: 12, name: "Steam", slug: "steam", description: "Steam Gift Cards", color: "#64748b" },
+          { id: 13, name: "PSN", slug: "psn", description: "PlayStation Network Cards", color: "#2563eb" },
+          { id: 14, name: "Xbox", slug: "xbox", description: "Xbox Gift Cards", color: "#16a34a" },
+          { id: 15, name: "Apple", slug: "apple", description: "Apple Gift Cards", color: "#6b7280" },
         ];
         state.initialized = true;
       }
