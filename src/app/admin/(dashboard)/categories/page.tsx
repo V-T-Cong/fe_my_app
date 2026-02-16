@@ -5,7 +5,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
     fetchCategories,
     createCategory,
-    updateCategoryLocal,
+    updateCategory,
     deleteCategoryLocal,
     type Category,
 } from "@/lib/redux/features/categoriesSlice";
@@ -74,7 +74,7 @@ export default function CategoriesPage() {
     const resetForm = () => {
         setName("");
         setDescription("");
-        setColor("#3b82f6");
+        setColor("#df8b05ff");
         setEditingCategory(null);
     };
 
@@ -95,15 +95,21 @@ export default function CategoriesPage() {
         if (!name.trim()) return;
 
         if (editingCategory) {
-            // Update existing category (local only until BE supports update)
-            const updatedCategory: Category = {
-                ...editingCategory,
-                name: name.trim(),
-                description: description.trim(),
-                color,
-            };
-            dispatch(updateCategoryLocal(updatedCategory));
-            toast.success("Category updated locally");
+            // Update via API
+            try {
+                await dispatch(updateCategory({
+                    id: editingCategory.id,
+                    data: {
+                        name: name.trim(),
+                        description: description.trim(),
+                        color,
+                    },
+                })).unwrap();
+                toast.success("Category updated successfully");
+            } catch {
+                toast.error("Failed to update category");
+                return;
+            }
         } else {
             // Create via API
             try {

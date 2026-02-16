@@ -44,6 +44,19 @@ export const createCategory = createAsyncThunk(
   }
 );
 
+export const updateCategory = createAsyncThunk(
+  "categories/update",
+  async ({ id, data }: { id: string; data: CategoryRequest }, { rejectWithValue }) => {
+    try {
+      return await categoryService.update(id, data);
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Failed to update category";
+      return rejectWithValue(message);
+    }
+  }
+);
+
 const categoriesSlice = createSlice({
   name: "categories",
   initialState,
@@ -89,6 +102,24 @@ const categoriesSlice = createSlice({
         state.items.push(action.payload);
       })
       .addCase(createCategory.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      })
+      // Update
+      .addCase(updateCategory.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateCategory.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.items.findIndex(
+          (item) => item.id === action.payload.id
+        );
+        if (index !== -1) {
+          state.items[index] = action.payload;
+        }
+      })
+      .addCase(updateCategory.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

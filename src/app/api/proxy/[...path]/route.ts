@@ -19,14 +19,18 @@ export async function handler(request: NextRequest) {
 
   try {
     // Read body for non-GET requests
-    let body: string | null = null;
+    let body: string | undefined = undefined;
     if (request.method !== "GET" && request.method !== "HEAD") {
-      body = await request.text();
+      const text = await request.text();
+      body = text || undefined; // Don't send empty string as body
     }
+
+    console.log(`[Proxy] ${request.method} ${targetUrl}`);
+    console.log(`[Proxy] Has token: ${!!accessToken}`);
 
     const backendResponse = await fetch(targetUrl, {
       method: request.method,
-      headers,
+      headers: body ? headers : { Authorization: headers["Authorization"] || "" },
       body,
     });
 
@@ -100,6 +104,7 @@ export async function handler(request: NextRequest) {
 
     // Forward the backend response
     const responseData = await backendResponse.text();
+    console.log(`[Proxy] Response: ${backendResponse.status}`, responseData.substring(0, 200));
     return new NextResponse(responseData, {
       status: backendResponse.status,
       headers: {

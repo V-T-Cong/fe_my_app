@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Protect admin dashboard routes (but not the login page itself)
@@ -17,6 +17,6 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Only run middleware on admin routes (excluding API routes and static files)
+  // Only run proxy on admin routes (excluding API routes and static files)
   matcher: ["/admin/:path*"],
 };
