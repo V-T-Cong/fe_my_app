@@ -3,9 +3,9 @@ import type { Category, CategoryRequest, PageResponse } from "@/types";
 
 export const categoryService = {
 
-  getAll: async (page: number = 0, size: number = 10) => {
+  getAll: async (page: number = 0, size: number = 10, search?: string) => {
     const response = await api.get<PageResponse<Category>>("/api/categories", {
-      params: { page, size },
+      params: { page, size, ...(search ? { search } : {}) },
     });
     return response.data;
   },

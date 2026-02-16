@@ -30,11 +30,11 @@ const initialState: CategoriesState = {
 export const fetchCategories = createAsyncThunk(
   "categories/fetchAll",
   async (
-    { page = 0, size = 10 }: { page?: number; size?: number } = {},
+    { page = 0, size = 10, search }: { page?: number; size?: number; search?: string } = {},
     { rejectWithValue }
   ) => {
     try {
-      return await categoryService.getAll(page, size);
+      return await categoryService.getAll(page, size, search);
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : "Failed to fetch categories";

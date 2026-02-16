@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
     fetchCategories,
@@ -67,20 +67,27 @@ export default function CategoriesPage() {
 
     // Search state
     const [searchQuery, setSearchQuery] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
+    const isInitialMount = useRef(true);
 
-    const filteredCategories = useMemo(() => {
-        if (!searchQuery.trim()) return categories;
-        const query = searchQuery.toLowerCase();
-        return categories.filter(
-            (cat) =>
-                cat.name.toLowerCase().includes(query) ||
-                (cat.description && cat.description.toLowerCase().includes(query))
-        );
-    }, [categories, searchQuery]);
-
+    // Debounce search input (300ms)
     useEffect(() => {
-        dispatch(fetchCategories({ page: 0, size: pageSize }));
-    }, [dispatch, pageSize]);
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchQuery);
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    // Fetch categories on mount and when search/page changes
+    useEffect(() => {
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            dispatch(fetchCategories({ page: 0, size: pageSize }));
+            return;
+        }
+        // When search changes, always go to page 0
+        dispatch(fetchCategories({ page: 0, size: pageSize, search: debouncedSearch || undefined }));
+    }, [dispatch, pageSize, debouncedSearch]);
 
     useEffect(() => {
         if (error) {
@@ -137,7 +144,7 @@ export default function CategoriesPage() {
                 })).unwrap();
                 toast.success("Category created successfully");
                 // Re-fetch current page to stay in sync
-                dispatch(fetchCategories({ page: currentPage, size: pageSize }));
+                dispatch(fetchCategories({ page: currentPage, size: pageSize, search: debouncedSearch || undefined }));
             } catch {
                 toast.error("Failed to create category");
                 return;
@@ -161,7 +168,7 @@ export default function CategoriesPage() {
             toast.success("Category deleted successfully");
             // Re-fetch: if current page is empty after delete, go to previous page
             const goToPage = categories.length === 1 && currentPage > 0 ? currentPage - 1 : currentPage;
-            dispatch(fetchCategories({ page: goToPage, size: pageSize }));
+            dispatch(fetchCategories({ page: goToPage, size: pageSize, search: debouncedSearch || undefined }));
         } catch {
             toast.error("Failed to delete category");
         }
@@ -215,18 +222,18 @@ export default function CategoriesPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {filteredCategories.length === 0 ? (
+                            {categories.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={4} className="text-center py-12 text-gray-500">
                                         {loading
                                             ? "Loading categories..."
-                                            : searchQuery.trim()
-                                                ? `No categories matching "${searchQuery}"`
+                                            : debouncedSearch
+                                                ? `No categories matching "${debouncedSearch}"`
                                                 : "No categories available. Add your first category to get started."}
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                filteredCategories.map((category) => (
+                                categories.map((category) => (
                                     <TableRow key={category.id}>
                                         <TableCell>
                                             <div
@@ -278,7 +285,7 @@ export default function CategoriesPage() {
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => dispatch(fetchCategories({ page: currentPage - 1, size: pageSize }))}
+                                onClick={() => dispatch(fetchCategories({ page: currentPage - 1, size: pageSize, search: debouncedSearch || undefined }))}
                                 disabled={currentPage === 0 || loading}
                             >
                                 <ChevronLeft className="h-4 w-4 mr-1" />
@@ -290,7 +297,7 @@ export default function CategoriesPage() {
                                     variant={i === currentPage ? "default" : "outline"}
                                     size="sm"
                                     className="w-9"
-                                    onClick={() => dispatch(fetchCategories({ page: i, size: pageSize }))}
+                                    onClick={() => dispatch(fetchCategories({ page: i, size: pageSize, search: debouncedSearch || undefined }))}
                                     disabled={loading}
                                 >
                                     {i + 1}
@@ -299,7 +306,7 @@ export default function CategoriesPage() {
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => dispatch(fetchCategories({ page: currentPage + 1, size: pageSize }))}
+                                onClick={() => dispatch(fetchCategories({ page: currentPage + 1, size: pageSize, search: debouncedSearch || undefined }))}
                                 disabled={currentPage >= totalPages - 1 || loading}
                             >
                                 Next
