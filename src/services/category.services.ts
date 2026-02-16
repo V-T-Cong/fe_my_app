@@ -16,7 +16,9 @@ export const categoryService = {
   },
 
   create: async (data: CategoryRequest) => {
-    const response = await api.post<Category>("/api/categories/create", data);
+    const response = await api.post<Category>("/api/categories/create", null, {
+      params: data,
+    });
     return response.data;
   },
 
