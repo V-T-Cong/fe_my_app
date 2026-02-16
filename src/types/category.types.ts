@@ -12,3 +12,15 @@ export interface Category {
   description: string;
   color: string;
 }
+
+// Spring Boot Page response
+export interface PageResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  number: number; // current page (0-indexed)
+  size: number;
+  first: boolean;
+  last: boolean;
+  empty: boolean;
+}

@@ -1,10 +1,12 @@
 import api from "@/lib/axios";
-import type { Category, CategoryRequest } from "@/types";
+import type { Category, CategoryRequest, PageResponse } from "@/types";
 
 export const categoryService = {
 
-  getAll: async () => {
-    const response = await api.get<Category[]>("/api/categories");
+  getAll: async (page: number = 0, size: number = 10) => {
+    const response = await api.get<PageResponse<Category>>("/api/categories", {
+      params: { page, size },
+    });
     return response.data;
   },
 

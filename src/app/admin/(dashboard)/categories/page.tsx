@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
     fetchCategories,
     createCategory,
     updateCategory,
-    deleteCategoryLocal,
+    deleteCategory,
     type Category,
 } from "@/lib/redux/features/categoriesSlice";
 import { toast } from "sonner";
@@ -41,7 +41,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-import { Plus, Pencil, Trash2, Tag } from "lucide-react";
+import { Plus, Pencil, Trash2, Tag, ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 
 
@@ -50,6 +50,10 @@ export default function CategoriesPage() {
     const categories = useAppSelector((state) => state.categories.items);
     const loading = useAppSelector((state) => state.categories.loading);
     const error = useAppSelector((state) => state.categories.error);
+    const currentPage = useAppSelector((state) => state.categories.currentPage);
+    const totalPages = useAppSelector((state) => state.categories.totalPages);
+    const totalElements = useAppSelector((state) => state.categories.totalElements);
+    const pageSize = useAppSelector((state) => state.categories.pageSize);
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -61,9 +65,22 @@ export default function CategoriesPage() {
     const [description, setDescription] = useState("");
     const [color, setColor] = useState("#3b82f6");
 
+    // Search state
+    const [searchQuery, setSearchQuery] = useState("");
+
+    const filteredCategories = useMemo(() => {
+        if (!searchQuery.trim()) return categories;
+        const query = searchQuery.toLowerCase();
+        return categories.filter(
+            (cat) =>
+                cat.name.toLowerCase().includes(query) ||
+                (cat.description && cat.description.toLowerCase().includes(query))
+        );
+    }, [categories, searchQuery]);
+
     useEffect(() => {
-        dispatch(fetchCategories());
-    }, [dispatch]);
+        dispatch(fetchCategories({ page: 0, size: pageSize }));
+    }, [dispatch, pageSize]);
 
     useEffect(() => {
         if (error) {
@@ -119,6 +136,8 @@ export default function CategoriesPage() {
                     color,
                 })).unwrap();
                 toast.success("Category created successfully");
+                // Re-fetch current page to stay in sync
+                dispatch(fetchCategories({ page: currentPage, size: pageSize }));
             } catch {
                 toast.error("Failed to create category");
                 return;
@@ -134,11 +153,18 @@ export default function CategoriesPage() {
         setDeleteDialogOpen(true);
     };
 
-    const handleConfirmDelete = () => {
+    const handleConfirmDelete = async () => {
         if (!categoryToDelete) return;
 
-        dispatch(deleteCategoryLocal(categoryToDelete.id));
-        toast.success("Category deleted locally");
+        try {
+            await dispatch(deleteCategory(categoryToDelete.id)).unwrap();
+            toast.success("Category deleted successfully");
+            // Re-fetch: if current page is empty after delete, go to previous page
+            const goToPage = categories.length === 1 && currentPage > 0 ? currentPage - 1 : currentPage;
+            dispatch(fetchCategories({ page: goToPage, size: pageSize }));
+        } catch {
+            toast.error("Failed to delete category");
+        }
         setDeleteDialogOpen(false);
         setCategoryToDelete(null);
     };
@@ -156,7 +182,7 @@ export default function CategoriesPage() {
                                 Category Management
                             </h1>
                             <p className="text-gray-600 mt-2">
-                                Manage product categories - {categories.length} total categories
+                                Manage product categories - {totalElements} total categories
                             </p>
                         </div>
                         <Button onClick={handleAddCategory} size="lg">
@@ -164,6 +190,17 @@ export default function CategoriesPage() {
                             Add New Category
                         </Button>
                     </div>
+                </div>
+
+                {/* Search Bar */}
+                <div className="mb-4 relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                        placeholder="Search categories by name or description..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-10 bg-white"
+                    />
                 </div>
 
                 {/* Categories Table */}
@@ -178,14 +215,18 @@ export default function CategoriesPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {categories.length === 0 ? (
+                            {filteredCategories.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={4} className="text-center py-12 text-gray-500">
-                                        {loading ? "Loading categories..." : "No categories available. Add your first category to get started."}
+                                        {loading
+                                            ? "Loading categories..."
+                                            : searchQuery.trim()
+                                                ? `No categories matching "${searchQuery}"`
+                                                : "No categories available. Add your first category to get started."}
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                categories.map((category) => (
+                                filteredCategories.map((category) => (
                                     <TableRow key={category.id}>
                                         <TableCell>
                                             <div
@@ -226,6 +267,47 @@ export default function CategoriesPage() {
                         </TableBody>
                     </Table>
                 </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                    <div className="mt-4 flex items-center justify-between bg-white rounded-lg shadow-sm px-6 py-4">
+                        <p className="text-sm text-gray-600">
+                            Showing {currentPage * pageSize + 1}-{Math.min((currentPage + 1) * pageSize, totalElements)} of {totalElements}
+                        </p>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => dispatch(fetchCategories({ page: currentPage - 1, size: pageSize }))}
+                                disabled={currentPage === 0 || loading}
+                            >
+                                <ChevronLeft className="h-4 w-4 mr-1" />
+                                Previous
+                            </Button>
+                            {Array.from({ length: totalPages }, (_, i) => (
+                                <Button
+                                    key={i}
+                                    variant={i === currentPage ? "default" : "outline"}
+                                    size="sm"
+                                    className="w-9"
+                                    onClick={() => dispatch(fetchCategories({ page: i, size: pageSize }))}
+                                    disabled={loading}
+                                >
+                                    {i + 1}
+                                </Button>
+                            ))}
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => dispatch(fetchCategories({ page: currentPage + 1, size: pageSize }))}
+                                disabled={currentPage >= totalPages - 1 || loading}
+                            >
+                                Next
+                                <ChevronRight className="h-4 w-4 ml-1" />
+                            </Button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Add/Edit Category Dialog */}
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

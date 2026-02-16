@@ -1,4 +1,4 @@
-import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { categoryService } from "@/services/category.services";
 import type { Category, CategoryRequest } from "@/types";
 
@@ -9,20 +9,32 @@ interface CategoriesState {
   items: Category[];
   loading: boolean;
   error: string | null;
+  // Pagination
+  currentPage: number;
+  totalPages: number;
+  totalElements: number;
+  pageSize: number;
 }
 
 const initialState: CategoriesState = {
   items: [],
   loading: false,
   error: null,
+  currentPage: 0,
+  totalPages: 0,
+  totalElements: 0,
+  pageSize: 10,
 };
 
 // Async Thunks
 export const fetchCategories = createAsyncThunk(
   "categories/fetchAll",
-  async (_, { rejectWithValue }) => {
+  async (
+    { page = 0, size = 10 }: { page?: number; size?: number } = {},
+    { rejectWithValue }
+  ) => {
     try {
-      return await categoryService.getAll();
+      return await categoryService.getAll(page, size);
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : "Failed to fetch categories";
@@ -57,36 +69,42 @@ export const updateCategory = createAsyncThunk(
   }
 );
 
+export const deleteCategory = createAsyncThunk(
+  "categories/delete",
+  async (id: string, { rejectWithValue }) => {
+    try {
+      await categoryService.delete(id);
+      return id;
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Failed to delete category";
+      return rejectWithValue(message);
+    }
+  }
+);
+
 const categoriesSlice = createSlice({
   name: "categories",
   initialState,
   reducers: {
-    // Keep local-only actions for optimistic updates if needed
-    updateCategoryLocal: (state, action: PayloadAction<Category>) => {
-      const index = state.items.findIndex(
-        (item) => item.id === action.payload.id
-      );
-      if (index !== -1) {
-        state.items[index] = action.payload;
-      }
-    },
-    deleteCategoryLocal: (state, action: PayloadAction<string>) => {
-      state.items = state.items.filter((item) => item.id !== action.payload);
-    },
     clearError: (state) => {
       state.error = null;
     },
   },
   extraReducers: (builder) => {
     builder
-      // Fetch all
+      // Fetch all (paginated)
       .addCase(fetchCategories.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(fetchCategories.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload;
+        state.items = action.payload.content;
+        state.currentPage = action.payload.number;
+        state.totalPages = action.payload.totalPages;
+        state.totalElements = action.payload.totalElements;
+        state.pageSize = action.payload.size;
       })
       .addCase(fetchCategories.rejected, (state, action) => {
         state.loading = false;
@@ -97,9 +115,9 @@ const categoriesSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(createCategory.fulfilled, (state, action) => {
+      .addCase(createCategory.fulfilled, (state) => {
         state.loading = false;
-        state.items.push(action.payload);
+        // Don't push locally — will re-fetch current page
       })
       .addCase(createCategory.rejected, (state, action) => {
         state.loading = false;
@@ -122,13 +140,22 @@ const categoriesSlice = createSlice({
       .addCase(updateCategory.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+      })
+      // Delete
+      .addCase(deleteCategory.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteCategory.fulfilled, (state) => {
+        state.loading = false;
+        // Don't filter locally — will re-fetch current page
+      })
+      .addCase(deleteCategory.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });
 
-export const {
-  updateCategoryLocal,
-  deleteCategoryLocal,
-  clearError,
-} = categoriesSlice.actions;
+export const { clearError } = categoriesSlice.actions;
 export default categoriesSlice.reducer;
