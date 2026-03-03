@@ -56,7 +56,7 @@ export function AdminSidebar() {
     const pathname = usePathname();
 
     return (
-        <div className="flex h-full w-64 flex-col bg-gray-900 text-white">
+        <div className="flex h-screen w-64 shrink-0 flex-col bg-gray-900 text-white sticky top-0">
             {/* Logo/Header */}
             <div className="flex h-16 items-center border-b border-gray-800 px-6">
                 <Link href="/" className="flex items-center gap-2 hover:opacity-80">
