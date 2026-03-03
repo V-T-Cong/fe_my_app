@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
-import { fetchCategories } from "@/lib/redux/features/categoriesSlice";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { type Category } from "@/types";
+import { categoryService } from "@/services/category.services";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,7 +23,6 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Product } from "@/lib/redux/features/productsSlice";
-import { Star } from "lucide-react";
 
 interface ProductFormProps {
     open: boolean;
@@ -51,14 +51,35 @@ const COLOR_OPTIONS = [
 
 export function ProductForm({ open, onOpenChange, onSave, product, nextId }: ProductFormProps) {
     const dispatch = useAppDispatch();
-    const categories = useAppSelector((state) => state.categories.items);
-    const categoriesLoading = useAppSelector((state) => state.categories.loading);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [categoriesLoading, setCategoriesLoading] = useState(true);
 
     useEffect(() => {
-        if (categories.length === 0 && !categoriesLoading) {
-            dispatch(fetchCategories());
+        let isMounted = true;
+        const loadCategories = async () => {
+            try {
+                setCategoriesLoading(true);
+                const response = await categoryService.getAll(0, 1000);
+                if (isMounted) {
+                    setCategories(response.content);
+                }
+            } catch (error) {
+                console.error("Failed to fetch categories:", error);
+            } finally {
+                if (isMounted) {
+                    setCategoriesLoading(false);
+                }
+            }
+        };
+
+        if (open && categories.length === 0) {
+            loadCategories();
         }
-    }, [dispatch, categories.length, categoriesLoading]);
+
+        return () => {
+            isMounted = false;
+        };
+    }, [open, categories.length]);
 
     const [formData, setFormData] = useState<Product>({
         id: nextId,
@@ -66,7 +87,6 @@ export function ProductForm({ open, onOpenChange, onSave, product, nextId }: Pro
         price: "",
         originalPrice: "",
         discount: "",
-        rating: undefined,
         categories: [],
         color: COLOR_OPTIONS[0].value,
         initials: "",
@@ -83,7 +103,6 @@ export function ProductForm({ open, onOpenChange, onSave, product, nextId }: Pro
                 price: "",
                 originalPrice: "",
                 discount: "",
-                rating: undefined,
                 categories: [],
                 color: COLOR_OPTIONS[0].value,
                 initials: "",
@@ -111,29 +130,6 @@ export function ProductForm({ open, onOpenChange, onSave, product, nextId }: Pro
         e.preventDefault();
         onSave(formData);
         onOpenChange(false);
-    };
-
-    const renderStarRating = () => {
-        const rating = formData.rating || 0;
-        return (
-            <div className="flex gap-1">
-                {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                        key={star}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, rating: star })}
-                        className="focus:outline-none transition-colors"
-                    >
-                        <Star
-                            className={`h-5 w-5 ${star <= rating
-                                ? "fill-yellow-400 text-yellow-400"
-                                : "text-gray-300"
-                                }`}
-                        />
-                    </button>
-                ))}
-            </div>
-        );
     };
 
     return (
@@ -298,31 +294,22 @@ export function ProductForm({ open, onOpenChange, onSave, product, nextId }: Pro
                                     </Select>
                                 </div>
 
-                                {/* Initials and Rating Row */}
-                                <div className="grid grid-cols-2 gap-4">
-                                    {/* Initials */}
-                                    <div className="space-y-2">
-                                        <Label htmlFor="initials">
-                                            Initials <span className="text-red-500">*</span>
-                                        </Label>
-                                        <Input
-                                            id="initials"
-                                            placeholder="e.g. EA"
-                                            value={formData.initials}
-                                            onChange={(e) =>
-                                                setFormData({ ...formData, initials: e.target.value.toUpperCase() })
-                                            }
-                                            maxLength={10}
-                                            required
-                                            className="bg-gray-50"
-                                        />
-                                    </div>
-
-                                    {/* Rating */}
-                                    <div className="space-y-2">
-                                        <Label>Rating</Label>
-                                        {renderStarRating()}
-                                    </div>
+                                {/* Initials */}
+                                <div className="space-y-2">
+                                    <Label htmlFor="initials">
+                                        Initials <span className="text-red-500">*</span>
+                                    </Label>
+                                    <Input
+                                        id="initials"
+                                        placeholder="e.g. EA"
+                                        value={formData.initials}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, initials: e.target.value.toUpperCase() })
+                                        }
+                                        maxLength={10}
+                                        required
+                                        className="bg-gray-50"
+                                    />
                                 </div>
                             </div>
                         </div>
