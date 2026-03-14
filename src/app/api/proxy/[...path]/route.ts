@@ -8,29 +8,45 @@ export async function handler(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams.toString();
   const targetUrl = `${BACKEND_URL}${pathname}${searchParams ? `?${searchParams}` : ""}`;
 
-  // Build headers — forward content-type and add auth
-  const headers: Record<string, string> = {
-    "Content-Type": request.headers.get("content-type") || "application/json",
-  };
-
-  if (accessToken) {
-    headers["Authorization"] = `Bearer ${accessToken}`;
-  }
-
   try {
     // Read body for non-GET requests
-    let body: string | undefined = undefined;
+    let body: BodyInit | undefined = undefined;
+    const contentType = request.headers.get("content-type") || "";
+    const isMultipart = contentType.includes("multipart/form-data");
+
     if (request.method !== "GET" && request.method !== "HEAD") {
-      const text = await request.text();
-      body = text || undefined; // Don't send empty string as body
+      if (isMultipart) {
+        // For multipart/form-data, forward the raw body as-is
+        body = await request.arrayBuffer();
+      } else {
+        const text = await request.text();
+        body = text || undefined; // Don't send empty string as body
+      }
+    }
+
+    // Build headers for the backend request
+    const forwardHeaders: Record<string, string> = {};
+    if (accessToken) {
+      forwardHeaders["Authorization"] = `Bearer ${accessToken}`;
+    }
+    if (isMultipart) {
+      // Forward the exact content-type with boundary for multipart
+      forwardHeaders["Content-Type"] = contentType;
+    } else if (body) {
+      forwardHeaders["Content-Type"] = "application/json";
     }
 
     console.log(`[Proxy] ${request.method} ${targetUrl}`);
     console.log(`[Proxy] Has token: ${!!accessToken}`);
+    console.log(`[Proxy] Token: ${accessToken?.substring(0, 30)}...`);
+    console.log(`[Proxy] Forward headers:`, JSON.stringify(forwardHeaders));
+    if (body && typeof body === "string") {
+      console.log(`[Proxy] Body:`, body.substring(0, 300));
+    }
 
     const backendResponse = await fetch(targetUrl, {
       method: request.method,
-      headers: body ? headers : { Authorization: headers["Authorization"] || "" },
+      headers: forwardHeaders,
       body,
     });
 
@@ -52,10 +68,10 @@ export async function handler(request: NextRequest) {
           const refreshData = await refreshResponse.json();
 
           // Retry original request with new token
-          headers["Authorization"] = `Bearer ${refreshData.accessToken}`;
+          forwardHeaders["Authorization"] = `Bearer ${refreshData.accessToken}`;
           const retryResponse = await fetch(targetUrl, {
             method: request.method,
-            headers,
+            headers: forwardHeaders,
             body,
           });
 
@@ -104,7 +120,11 @@ export async function handler(request: NextRequest) {
 
     // Forward the backend response
     const responseData = await backendResponse.text();
-    console.log(`[Proxy] Response: ${backendResponse.status}`, responseData.substring(0, 200));
+    console.log(`[Proxy] Response status: ${backendResponse.status}`);
+    console.log(`[Proxy] Response body: ${responseData.substring(0, 500)}`);
+    if (!backendResponse.ok) {
+      console.log(`[Proxy] Response headers:`, Object.fromEntries(backendResponse.headers.entries()));
+    }
     return new NextResponse(responseData, {
       status: backendResponse.status,
       headers: {
