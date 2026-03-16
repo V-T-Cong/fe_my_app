@@ -173,21 +173,21 @@ export default function NewProductPage() {
 
         try {
             setSubmitting(true);
-            await productService.create({
+            await productService.create(
+                {
                     name: formData.name,
                     slug: formData.slug,
                     description: formData.description,
                     discountPercent: formData.discountPercent,
                     categoryIds: formData.categoryIds,
                     variants: variants,
-                });
+                },
+                imageFiles.length > 0 ? imageFiles : undefined
+            );
             router.push("/admin/products");
         } catch (err: any) {
             console.error("Failed to create product:", err);
-            const message =
-                err.response?.data?.error ||
-                err.response?.data?.message ||
-                "Failed to create product. Please try again.";
+            const message = err.message || "Failed to create product. Please try again.";
             setError(message);
         } finally {
             setSubmitting(false);
